@@ -6,27 +6,34 @@ population = 50
 elite_num = 5
 new_random = 5
 mutation_prob = 0.001
+distances = {}
 
 class Chromosome:
-    factory = None
+    warehouse = None
     truck_routes = []
+    _value = None
 
-    def __init__(self, factoryPoint, stopPointsList):
-        self.factory = factoryPoint
+    def __init__(self, warehousePoint, stopPointsList):
+        self.warehouse = warehousePoint
         self.truck_routes = stopPointsList
     
     def trucks_needed(self):
         return len(self.truck_routes)
 
     def evaluate(self):
-        result = 0
-        for truck_route in self.truck_routes:
-            for i in range( len(truck_route) ):
-                if i == 0:
-                    result += distance(self.factory, self.truck_routes[i])
-                result += distance(self.truck_routes[i-1], self.truck_routes[i])
-            result += distance(self.truck_routes[-1], self.factory)
-        return result
+        if _value is not None:
+            return _value
+        else:
+            result = 0
+            for truck_route in self.truck_routes:
+                if len(truck_route) > 0:
+                    for i in range( len(truck_route) ):
+                        if i == 0:
+                            result += GetDistance(self.warehouse, self.truck_routes[i])
+                        result += GetDistance(self.truck_routes[i-1], self.truck_routes[i])
+                    result += GetDistance(self.truck_routes[-1], self.warehouse)
+            _value = result
+            return result
         
 
 def RandomChromosome(min_x, min_y, diff_x, diff_y, points, trucks_amount):
@@ -51,6 +58,16 @@ def Generate_Chromosome(solutions):
         return Mutate(child1)
     return child1
 
+def GetDistance(point1, point2):
+    if (point1, point2) in distances:
+        return distances[(point1, point2)]
+    elif (point2, point1) in distances:
+        return distances[(point2, point1)]
+    else:
+        dist = distance(point1, point2).km
+        distances[(point1, point2)] = dist
+        return dist
+
 def ChooseParent(solutions):
     best_value = solutions[0].evaluate()
     random_index = randint(0, len(solutions) - 1 )
@@ -59,7 +76,23 @@ def ChooseParent(solutions):
     return solutions[random_index]
 
 def CrossOver(parent1, parent2):
-    pass
+    warehouseAvg = ( (parent1.warehouse[0] + parent2.warehouse[0])/2, (parent1.warehouse[1] + parent2.warehouse[1])/2 )
+    resStopPoints = [ route[:len(route)/2] for route in parent1.truck_routes ]
+    for route in parent2.truck_routes:
+        unlisted_points = []
+        for point in route:
+            if not Contains(resStopPoints, point):
+                unlisted_points.append( point )
+        truck_index = randint(1, len(resStopPoints) ) - 1
+        for point in unlisted_points:
+            resStopPoints[truck_index].append( point )
+    return Chromosome(warehouseAvg, resStopPoints)
+
+def Contains(truck_routes, point):
+    for route in truck_routes:
+        if point in route:
+            return True
+    return False
 
 def Mutate(solution):
     trucks_amount = len(solution.truck_routes)
@@ -76,7 +109,7 @@ def Mutate(solution):
     return solution
     
 
-# first program: Best place to put factory if we have only one truck (modified TSP)
+# first program: Best place to put warehouse if we have only one truck (modified TSP)
 def Main():
     global population, new_random, elite_num
     adresses = []
@@ -119,7 +152,7 @@ def Main():
     next_solutions = []
     genNum = 1
     while genNum <= N or True :
-        print( "Solving generation {}".format(genNum) )
+        print( "Best value from generation {0}: {1}".format( genNum, solutions[0].evaluate() ) )
         # add elite
         next_solutions = solutions[:elite_num]
         # add new random
