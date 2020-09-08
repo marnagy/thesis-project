@@ -21,8 +21,8 @@ class Chromosome:
         return len(self.truck_routes)
 
     def evaluate(self):
-        if _value is not None:
-            return _value
+        if self._value is not None:
+            return self._value
         else:
             result = 0
             for truck_route in self.truck_routes:
