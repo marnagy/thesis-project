@@ -79,10 +79,25 @@ def ChooseParent(solutions):
 def CrossOver(parent1, parent2):
     warehouseAvg = ( (parent1.warehouse[0] + parent2.warehouse[0])/2, (parent1.warehouse[1] + parent2.warehouse[1])/2 )
     truck_routes = parent1.truck_routes.copy()
-    # shuffle(truck_routes)
+    indices = []
+    for route in truck_routes:
+        temp = [ x for x in range( len(route) ) ]
+        shuffle(temp)
+        indices.append( sorted( temp[:randint(0, len(route) - 1)] ) )
+    
+    # print( "indices -> " + str(indices) )
 
     # TO-DO: choose half random indices, sort and add in order
-    resStopPoints = [ route[:math.floor(len(route)/2)] for route in truck_routes ]
+    #resStopPoints = [ route[:math.floor(len(route)/2)] for route in truck_routes ]
+    resStopPoints = []
+    for i in range(len(indices)):
+        temp_route = []
+        for index in indices[i]:
+            temp_route.append( truck_routes[i][index] )
+        resStopPoints.append( temp_route )
+    
+    # print( "resStopPoints -> " + str(resStopPoints) )
+
     for route in parent2.truck_routes:
         unlisted_points = []
         for point in route:
@@ -128,9 +143,9 @@ def Main():
     except EOFError:
         pass
     nom         = Nominatim(user_agent="test_app")
-    #print("Getting locations...")
+    print("Getting locations...")
     geocodes    = [     nom.geocode(x)          for x in adresses ]
-    #print("Loaded all locations.")
+    print("Loaded all locations.")
     coordinates = [ (x.latitude, x.longitude)   for x in geocodes ]
 
     with open("coordinates.txt","w") as f:
@@ -180,11 +195,11 @@ def Main():
     best_chromosome = solutions[0]
     print()
     print("Best solution found:")
-    print("Total value: {}".format(best_chromosome.evaluate()) )
-    print("Warehouse point: {}".format(best_chromosome.warehouse) )
+    print("Total needed distance (km): {}".format(best_chromosome.evaluate()) )
+    print("Warehouse geopoint: {}".format(best_chromosome.warehouse) )
     i = 1
     for route in best_chromosome.truck_routes:
-        print("Truck {}:".format(i))
+        print("Truck {} delivery points:".format(i))
         for point in route:
             print(point)
         i += 1
