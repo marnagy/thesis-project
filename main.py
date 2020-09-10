@@ -208,12 +208,12 @@ def Main():
         avg_values.append( sum( [x.evaluate() for x in solutions] ) / len(solutions) )
         worst_values.append( solutions[len(solutions) - 1].evaluate() )
 
+        genNum += 1
+
         if best_value > solutions[0].evaluate():
             best_value = solutions[0].evaluate()
             print( "Gen {0} -> {1}".format( genNum, best_value ) )
 
-
-        genNum += 1
 
     best_chromosome = solutions[0]
     print()
