@@ -6,9 +6,11 @@ from matplotlib import pyplot as plt
 
 population = 50
 elite_num = 2
-new_random = 0
+new_random = 5
 mutation_prob = 0.005
 distances = {}
+truck_value = 5
+distance_value = 1
 
 class Chromosome:
     warehouse = None
@@ -26,15 +28,16 @@ class Chromosome:
         if self._value is not None:
             return self._value
         else:
-            result = 0
+            result = truck_value * len(self.truck_routes)
+            distance = 0
             for truck_route in self.truck_routes:
                 if len(truck_route) > 0:
-                    for i in range( len(truck_route) ):
-                        if i == 0:
-                            result += GetDistance(self.warehouse, truck_route[i])
-                        result += GetDistance(truck_route[i-1], truck_route[i])
-                    result += GetDistance(truck_route[-1], self.warehouse)
-            _value = result
+                    distance += GetDistance(self.warehouse, truck_route[i])
+                    for i in range(len(truck_route) - 1 ):
+                        distance += GetDistance(truck_route[i], truck_route[i+1])
+                    distance += GetDistance(truck_route[-1], self.warehouse)
+            result += distance * distance_value
+            self._value = result
             return result
         
 
@@ -45,6 +48,9 @@ def RandomChromosome(min_x, min_y, diff_x, diff_y, points, trucks_amount):
     
     for point in points:
         resPoint[randint(0, trucks_amount - 1)].append(point)
+    
+    if [] in resPoint: 
+        return RandomChromosome(min_x, min_y, diff_x, diff_y, points, trucks_amount)
 
     return Chromosome(
         ( min_x + diff_x*random(),
@@ -78,26 +84,23 @@ def ChooseParent(solutions):
     return solutions[random_index]
 
 def CrossOver(parent1, parent2):
-    warehouseAvg = ( (parent1.warehouse[0] + parent2.warehouse[0])/2, (parent1.warehouse[1] + parent2.warehouse[1])/2 )
+    warehouse_x = parent1.warehouse[0] + random() * (parent1.warehouse[0] - parent2.warehouse[0])
+    warehouse_y = parent1.warehouse[1] + random() * (parent1.warehouse[1] - parent2.warehouse[1])
+    warehouseAvg = ( warehouse_x, warehouse_y )
+
     truck_routes = parent1.truck_routes.copy()
     indices = []
     for route in truck_routes:
         temp = [ x for x in range( len(route) ) ]
         shuffle(temp)
-        indices.append( sorted( temp[:randint(0, len(route) - 1)] ) )
-    
-    # print( "indices -> " + str(indices) )
+        indices.append( sorted( temp[:randint(0, len(route) )] ) )
 
-    # TO-DO: choose half random indices, sort and add in order
-    #resStopPoints = [ route[:math.floor(len(route)/2)] for route in truck_routes ]
     resStopPoints = []
     for i in range(len(indices)):
         temp_route = []
         for index in indices[i]:
             temp_route.append( truck_routes[i][index] )
         resStopPoints.append( temp_route )
-    
-    # print( "resStopPoints -> " + str(resStopPoints) )
 
     for route in parent2.truck_routes:
         unlisted_points = []
@@ -107,6 +110,8 @@ def CrossOver(parent1, parent2):
         truck_index = randint(1, len(resStopPoints) ) - 1
         for point in unlisted_points:
             resStopPoints[truck_index].append( point )
+    if [] in resStopPoints:
+        return CrossOver(parent1, parent2)
     return Chromosome(warehouseAvg, resStopPoints)
 
 def Contains(truck_routes, point):
@@ -147,6 +152,7 @@ def Main():
     print("Getting locations...")
     geocodes    = [     nom.geocode(x)          for x in adresses ]
     print("Loaded all locations.")
+    print( "Geocodes -> " + str(geocodes) )
     coordinates = [ (x.latitude, x.longitude)   for x in geocodes ]
 
     with open("coordinates.txt","w") as f:
@@ -169,7 +175,7 @@ def Main():
     solutions = []
     # init first generation
     for _ in range(population):
-        solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 1 ) )
+        solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 3 ) )
 
     solutions.sort( key=lambda chromosome: chromosome.evaluate() )
     next_solutions = []    

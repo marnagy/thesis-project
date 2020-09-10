@@ -28,6 +28,7 @@ def Main():
 		places = parent.find_elements_by_tag_name("div")
 
 		for place in places:
+			print("Text -> " + place.text )
 			if place is None or place.text == "":
 				continue
 			ul_list =  place.find_elements_by_tag_name("ul")
