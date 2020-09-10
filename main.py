@@ -2,11 +2,12 @@ from geopy.geocoders import Nominatim
 from geopy import distance
 from random import random, randint, shuffle
 import math
+from matplotlib import pyplot as plt
 
 population = 50
-elite_num = 5
-new_random = 5
-mutation_prob = 0.001
+elite_num = 2
+new_random = 0
+mutation_prob = 0.005
 distances = {}
 
 class Chromosome:
@@ -163,7 +164,7 @@ def Main():
     min_y       = min( y_coords )
     diff_y      = max_y - min_y
 
-    N = 1_500
+    N = 500
 
     solutions = []
     # init first generation
@@ -171,10 +172,16 @@ def Main():
         solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 1 ) )
 
     solutions.sort( key=lambda chromosome: chromosome.evaluate() )
-    next_solutions = []
+    next_solutions = []    
     genNum = 1
-    while genNum <= N :
-        print( "Gen {0} -> {1}".format( genNum, solutions[0].evaluate() ) )
+    best_values = [ solutions[0].evaluate() ]
+    avg_values = [ sum( [x.evaluate() for x in solutions] ) / len(solutions) ]
+    worst_values = [ solutions[len(solutions) - 1].evaluate() ]
+
+    best_value = solutions[0].evaluate()
+    print( "Gen {0} -> {1}".format( genNum, best_value ) )
+    while genNum < N :
+        
         # add elite
         next_solutions = solutions[:elite_num]
         # add new random
@@ -190,6 +197,16 @@ def Main():
 
         solutions = next_solutions
         next_solutions = []
+
+        best_values.append( solutions[0].evaluate() )
+        avg_values.append( sum( [x.evaluate() for x in solutions] ) / len(solutions) )
+        worst_values.append( solutions[len(solutions) - 1].evaluate() )
+
+        if best_value > solutions[0].evaluate():
+            best_value = solutions[0].evaluate()
+            print( "Gen {0} -> {1}".format( genNum, best_value ) )
+
+
         genNum += 1
 
     best_chromosome = solutions[0]
@@ -203,6 +220,14 @@ def Main():
         for point in route:
             print(point)
         i += 1
+    generations = [x for x in range(N)]
+    plt.plot( generations, best_values )
+    plt.plot( generations, avg_values )
+    plt.plot( generations, worst_values )
+    plt.xlabel("Generation")
+    plt.ylabel("Distance needed")
+    plt.legend(["Best", "Average", "Worst"])
+    plt.show()
 
 if __name__ == "__main__":
     Main()
