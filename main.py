@@ -1,16 +1,21 @@
+from random import random, randint, shuffle
+from matplotlib import pyplot as plt
 from geopy.geocoders import Nominatim
 from geopy import distance
-from random import random, randint, shuffle
+from PIL import Image
+import webbrowser
 import math
-from matplotlib import pyplot as plt
+import os
 
 population = 50
-elite_num = 2
-new_random = 5
-mutation_prob = 0.005
+elite_num = 0
+new_random = 30
+mutation_prob = 0.01
 distances = {}
 truck_value = 5
 distance_value = 1
+progress_img_name = "progress.png"
+solutions_img_name = "solutions.gif"
 
 class Chromosome:
     warehouse = None
@@ -32,7 +37,7 @@ class Chromosome:
             distance = 0
             for truck_route in self.truck_routes:
                 if len(truck_route) > 0:
-                    distance += GetDistance(self.warehouse, truck_route[i])
+                    distance += GetDistance(self.warehouse, truck_route[0])
                     for i in range(len(truck_route) - 1 ):
                         distance += GetDistance(truck_route[i], truck_route[i+1])
                     distance += GetDistance(truck_route[-1], self.warehouse)
@@ -133,11 +138,35 @@ def Mutate(solution):
             break
     solution.truck_routes[truck1][truck1_point], solution.truck_routes[truck2][truck2_point] = solution.truck_routes[truck2][truck2_point], solution.truck_routes[truck1][truck1_point]
     return solution
+
+def GenerateFigurePng(img_names, genNum, solution):
+    best_x_vals = [ x[0] for x in solution.truck_routes[0]]
+    best_y_vals = [ x[1] for x in solution.truck_routes[0]]
+    plt.scatter(best_x_vals, best_y_vals, color="g")
+    plt.scatter( [ solution.warehouse[0] ], [ solution.warehouse[1] ], color="r", marker="*")
+    plt.title("Generation {}: {}".format(genNum, solution.evaluate() ))
+    plt.savefig( "figure_{}.png".format(genNum) )
+    img_names.append("figure_{}.png".format(genNum))
+    plt.clf()
     
+def CreateGif(img_names):
+    frames = []
+    for img in img_names:
+        frames.append( Image.open(img) )
+    
+    frames[0].save(solutions_img_name, format='GIF',
+    append_images=frames[1:],
+    save_all=True, duration=200, loop=0)
+
+def DeletePNGs(names):
+    for name in names:
+        os.remove(name)
 
 # first program: Best place to put warehouse if we have only one truck (modified TSP)
 def Main():
     global population, new_random, elite_num
+    img_names = []
+
     adresses = []
     coordinates = []
     try:
@@ -152,7 +181,7 @@ def Main():
     print("Getting locations...")
     geocodes    = [     nom.geocode(x)          for x in adresses ]
     print("Loaded all locations.")
-    print( "Geocodes -> " + str(geocodes) )
+    #print( "Geocodes -> " + str(geocodes) )
     coordinates = [ (x.latitude, x.longitude)   for x in geocodes ]
 
     with open("coordinates.txt","w") as f:
@@ -170,12 +199,12 @@ def Main():
     min_y       = min( y_coords )
     diff_y      = max_y - min_y
 
-    N = 500
+    N = 2_000
 
     solutions = []
     # init first generation
     for _ in range(population):
-        solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 3 ) )
+        solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 1 ) )
 
     solutions.sort( key=lambda chromosome: chromosome.evaluate() )
     next_solutions = []    
@@ -183,8 +212,10 @@ def Main():
     best_values = [ solutions[0].evaluate() ]
     avg_values = [ sum( [x.evaluate() for x in solutions] ) / len(solutions) ]
     worst_values = [ solutions[len(solutions) - 1].evaluate() ]
-
     best_value = solutions[0].evaluate()
+
+    GenerateFigurePng(img_names, genNum, solutions[0])
+
     print( "Gen {0} -> {1}".format( genNum, best_value ) )
     while genNum < N :
         
@@ -199,9 +230,10 @@ def Main():
             next_solutions.append( Generate_Chromosome(solutions) )
 
         # sort solutions
-        next_solutions.sort( key=lambda chromosome: chromosome.evaluate() )
+        solutions += next_solutions
+        solutions.sort( key=lambda chromosome: chromosome.evaluate() )
+        solutions = solutions[:population]
 
-        solutions = next_solutions
         next_solutions = []
 
         best_values.append( solutions[0].evaluate() )
@@ -210,9 +242,11 @@ def Main():
 
         genNum += 1
 
+
         if best_value > solutions[0].evaluate():
             best_value = solutions[0].evaluate()
             print( "Gen {0} -> {1}".format( genNum, best_value ) )
+            GenerateFigurePng(img_names, genNum, solutions[0])
 
 
     best_chromosome = solutions[0]
@@ -226,6 +260,11 @@ def Main():
         for point in route:
             print(point)
         i += 1
+    
+    CreateGif(img_names)
+
+    DeletePNGs(img_names)
+
     generations = [x for x in range(N)]
     plt.plot( generations, best_values )
     plt.plot( generations, avg_values )
@@ -233,7 +272,11 @@ def Main():
     plt.xlabel("Generation")
     plt.ylabel("Distance needed")
     plt.legend(["Best", "Average", "Worst"])
-    plt.show()
+    plt.title( "Best solution: {}".format(best_chromosome.evaluate()) )
+    plt.savefig(progress_img_name)
+
+    # webbrowser.open(progress_img_name)
+    # webbrowser.open(solutions_img_name)
 
 if __name__ == "__main__":
     Main()
