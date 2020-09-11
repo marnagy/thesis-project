@@ -28,18 +28,23 @@ def Main():
 		places = parent.find_elements_by_tag_name("div")
 
 		for place in places:
-			if place.text == "":
+			#print("Text -> " + place.text )
+			try:
+				if place is None or place.text == "":
+					continue
+				ul_list =  place.find_elements_by_tag_name("ul")
+				if ul_list != []:
+					parts = ul_list[0].find_elements_by_tag_name("li")
+					address = ""
+					if (len(parts) == 3):
+						address = parts[1].text + " " + parts[2].text
+					elif (len(parts) == 2):
+						address = parts[0].text + " " + parts[1].text
+					#encoded_address = address.encode("utf8")
+					print(address)
+			except:
+				#print("Error")
 				continue
-			ul_list =  place.find_elements_by_tag_name("ul")
-			if ul_list != []:
-				parts = ul_list[0].find_elements_by_tag_name("li")
-				address = ""
-				if (len(parts) == 3):
-					address = parts[1].text + " " + parts[2].text
-				elif (len(parts) == 2):
-					address = parts[0].text + " " + parts[1].text
-				#encoded_address = address.encode("utf8")
-				print(address)
 
 	finally:
 		driver.quit()
