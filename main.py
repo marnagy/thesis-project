@@ -10,7 +10,7 @@ import os
 population = 50
 elite_num = 0
 new_random = 30
-mutation_prob = 0.01
+mutation_prob = 0.2
 distances = {}
 truck_value = 5
 distance_value = 1
@@ -143,7 +143,7 @@ def GenerateFigurePng(img_names, genNum, solution):
     best_x_vals = [ x[0] for x in solution.truck_routes[0]]
     best_y_vals = [ x[1] for x in solution.truck_routes[0]]
     plt.scatter(best_x_vals, best_y_vals, color="g")
-    plt.scatter( [ solution.warehouse[0] ], [ solution.warehouse[1] ], color="r", marker="*")
+    plt.scatter( [ solution.warehouse[0] ], [ solution.warehouse[1] ], color="r", marker="x")
     plt.title("Generation {}: {}".format(genNum, solution.evaluate() ))
     plt.savefig( "figure_{}.png".format(genNum) )
     img_names.append("figure_{}.png".format(genNum))
@@ -156,13 +156,13 @@ def CreateGif(img_names):
     
     frames[0].save(solutions_img_name, format='GIF',
     append_images=frames[1:],
-    save_all=True, duration=200, loop=0)
+    save_all=True, duration=250, loop=0)
 
 def DeletePNGs(names):
     for name in names:
         os.remove(name)
 
-# first program: Best place to put warehouse if we have only one truck (modified TSP)
+# first program: Best place to put warehouse if we have fixed amount of trucks (modified TSP)
 def Main():
     global population, new_random, elite_num
     img_names = []
@@ -184,12 +184,6 @@ def Main():
     #print( "Geocodes -> " + str(geocodes) )
     coordinates = [ (x.latitude, x.longitude)   for x in geocodes ]
 
-    with open("coordinates.txt","w") as f:
-        for coords in coordinates:
-            print(str(coords[0]) + "," + str(coords[1]),file=f)
-    
-    #print("Coordinates stored.")
-
     x_coords    = [ x[0] for x in coordinates ]
     max_x       = max( x_coords )
     min_x       = min( x_coords )
@@ -199,7 +193,7 @@ def Main():
     min_y       = min( y_coords )
     diff_y      = max_y - min_y
 
-    N = 2_000
+    N = 1_000
 
     solutions = []
     # init first generation
@@ -234,7 +228,10 @@ def Main():
         solutions.sort( key=lambda chromosome: chromosome.evaluate() )
         solutions = solutions[:population]
 
+        #solutions = next_solutions
         next_solutions = []
+
+        #solutions.sort(key= lambda chromosome: chromosome.evaluate())
 
         best_values.append( solutions[0].evaluate() )
         avg_values.append( sum( [x.evaluate() for x in solutions] ) / len(solutions) )
