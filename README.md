@@ -6,6 +6,10 @@ Used for getting addresses of random shops in Prague
 
 Necessary driver for selenium used in addresses.py
 
+### main-deap.py
+
+Main GA algorithm using DEAP module
+
 ### main.py
 
 Main custom program of GA
