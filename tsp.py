@@ -13,7 +13,7 @@ from deap import base
 from deap import creator
 from deap import tools
 
-ITEMS_NUMBER = 20
+ITEMS_NUMBER = 50
 
 random.seed(128)
 
@@ -51,11 +51,11 @@ toolbox.register("evaluate", evalTSP)
 def main():
 	random.seed(169)
 
-	NGEN = 10_000 # amount of generations
-	MU = 50 # amount of individuals to select from each generation (possible parents)
-	LAMBDA = 80 # number of new children for each generation
-	CXPB = 0.7 # probability of mating
-	MUTPB = 0.2 # mutation probability
+	NGEN = 2_000 # amount of generations
+	MU = 100 # amount of individuals to select from each generation (possible parents)
+	LAMBDA = 150 # number of new children for each generation
+	CXPB = 0.55 # probability of mating
+	MUTPB = 0.4 # mutation probability
 
 	pop = toolbox.population(n=MU)
 
@@ -71,6 +71,9 @@ def main():
 	
 	pop, logbook = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
 						stats=stats, halloffame=hof, verbose=False)
+	
+	# pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 	stats = stats, halloffame=hof, verbose=False)
 	
 	return pop, logbook, stats, hof
 
