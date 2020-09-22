@@ -1,3 +1,7 @@
+### Project demo
+
+1 warehouse 1 truck demo -> https://youtu.be/rlUiKhn08Lc
+
 ### addresses.py
 
 Used for getting addresses of random shops in Prague
