@@ -203,3 +203,4 @@ if __name__ == "__main__":
 	wh_x, wh_y = best[0], best[1]
 	path = paths[str(best)]
 	GenerateBestPath((wh_x, wh_y), path)
+	print("Best position for warehouse is {}".format( (wh_x, wh_y) ))
