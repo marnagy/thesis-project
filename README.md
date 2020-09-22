@@ -1,6 +1,6 @@
 ### Project demo
 
-1 warehouse 1 truck demo -> https://youtu.be/rlUiKhn08Lc
+1 warehouse 1 truck demo -> https://youtu.be/c6Ys4W7HJ9w
 
 ### addresses.py
 
