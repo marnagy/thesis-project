@@ -76,12 +76,9 @@ def evalTSP(TSPIndividual):
 	return distance,
 
 def evalFunc(individual):
-	global best_path_value, best_path
-	wh_x, wh_y = individual[0], individual[1]
-
 	toolbox = base.Toolbox()
 
-# Attribute generator
+	# Attribute generator
 	toolbox.register("TSPindices", random.sample, range(POINTS_NUM), POINTS_NUM)
 	# toolbox.register("TSPindices", shuffle_TSP, route)	
 
@@ -119,7 +116,7 @@ def evalFunc(individual):
 	# pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
 	# 	stats = stats, halloffame=hof, verbose=False)
 
-	paths[str(individual)] = [ x for x in hof[0] ]
+	individual.path = [ x for x in hof[0] ]
 	value = evalTSP(hof[0])
 	# if best_path_value is None or best_path_value > value[0]:
 	# 	best_path_value = value[0]
@@ -225,7 +222,7 @@ if __name__ == "__main__":
 	best = hof[0]
 	print(best)
 	wh_x, wh_y = best[0], best[1]
-	path = paths[str(best)]
+	path = best.path
 	GenerateBestPath((wh_x, wh_y), path)
 	print("Best position for warehouse: {}".format( (wh_x, wh_y) ))
 	print("Best value: {}".format(best.fitness))
