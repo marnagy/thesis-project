@@ -13,7 +13,7 @@ from deap import base
 from deap import creator
 from deap import tools
 
-ITEMS_NUMBER = 50
+ITEMS_NUMBER = 20
 
 random.seed(128)
 
@@ -21,6 +21,7 @@ items = {}
 
 for i in range(ITEMS_NUMBER):
 	items[i] = (random.uniform(0, 50), random.uniform(0, 50))
+#print(items)
 
 distance_map = [ [ sqrt((items[i][0] - items[j][0])**2 + (items[i][1] - items[j][1])**2) for j in range(ITEMS_NUMBER) ] for i in range(ITEMS_NUMBER) ]
 tour_size = ITEMS_NUMBER
@@ -49,39 +50,40 @@ toolbox.register("select", tools.selTournament, tournsize=3)
 toolbox.register("evaluate", evalTSP)
 
 def main():
-	random.seed(169)
+	#random.seed(169)
 
-	NGEN = 2_000 # amount of generations
+	NGEN = 1_000 # amount of generations
 	MU = 100 # amount of individuals to select from each generation (possible parents)
 	LAMBDA = 150 # number of new children for each generation
-	CXPB = 0.55 # probability of mating
-	MUTPB = 0.4 # mutation probability
+	CXPB = 0.15 # probability of mating
+	MUTPB = 0.8 # mutation probability
 
 	pop = toolbox.population(n=MU)
 
 	hof = tools.HallOfFame(1)
 	stats = tools.Statistics(lambda ind: ind.fitness.values)
 	stats.register("avg", numpy.mean)
-	stats.register("std", numpy.std)
+	#stats.register("std", numpy.std)
 	stats.register("min", numpy.min)
-	stats.register("max", numpy.max)
+	#stats.register("max", numpy.max)
 	
 	# pop, logbook = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=stats, 
 	# 					halloffame=hof, verbose=False)
 	
-	pop, logbook = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-						stats=stats, halloffame=hof, verbose=False)
+	# pop, logbook = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 					stats=stats, halloffame=hof, verbose=False)
 	
-	# pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-	# 	stats = stats, halloffame=hof, verbose=False)
+	pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+		stats = stats, halloffame=hof, verbose=True)
 	
 	return pop, logbook, stats, hof
 
 def GenerateProgressFigure(gen_vals, best_vals, avg_vals, worst_vals):
 	plt.plot(gen_vals, best_vals)
 	plt.plot(gen_vals, avg_vals)
-	plt.plot(gen_vals, worst_vals)
-	plt.legend(["Best", "Average", "Worst"])
+	#plt.plot(gen_vals, worst_vals)
+	#plt.legend(["Best", "Average", "Worst"])
+	plt.legend(["Best", "Average"])
 	plt.xlabel("Generation")
 	plt.ylabel("Distance")
 	plt.savefig("tsp-progress.png")
@@ -127,8 +129,8 @@ if __name__ == "__main__":
 	gen_vals   = [ x["gen"] for x in logbook ]
 	best_vals  = [ x["min"] for x in logbook ]
 	avg_vals   = [ x["avg"] for x in logbook ]
-	worst_vals = [ x["max"] for x in logbook ]
-	GenerateProgressFigure(gen_vals, best_vals, avg_vals, worst_vals)
+	#worst_vals = [ x["max"] for x in logbook ]
+	GenerateProgressFigure(gen_vals, best_vals, avg_vals, None)
 
 	best = hof.items[0]
 	best_dist = evalTSP(best)[0]

@@ -2,10 +2,16 @@ import array
 import random
 from math import sqrt
 from PIL import Image
-import sys
+from sys import argv
 import multiprocessing
+import time
+import os
+from requests import post
+#from concurrent.futures import ThreadPoolExecutor
+from geopy import distance
+import json
 
-import numpy
+import numpy as np
 from matplotlib import pyplot as plt
 
 from deap import algorithms
@@ -13,45 +19,116 @@ from deap import base
 from deap import creator
 from deap import tools
 
+import functools
+
 # custom lib
 import min_span_tree
 
-random.seed(64)
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=64, type=int, help="Random seed")
+parser.add_argument("--cores", default=int(multiprocessing.cpu_count()/2), type=int, help="Core count for multi processing")
+parser.add_argument("--runs", default=5, type=int, help="Amount of runs")
+parser.add_argument("--points_file", default="gps_coords.txt", type=str, help="Name of file containing gps coordinates of points")
 
-POINTS_NUM = 20
-POINTS_RANGE = 100
+args = parser.parse_args([] if "__file__" not in globals() else None)
 
-best_path = None
-best_path_value = None
+#random.seed(args.seed)
+
+use_geopy = False
+use_ors = False
+use_distance = True
+use_speed = False
+
+# check use_ params
+assert int(use_distance) + int(use_speed) <= 1
+assert int(use_geopy) + int(use_ors) <= 1
+
+use_multiproc = False
+
+debug = False
+
+ors_key = None
+assert "ors_key.txt" in os.listdir()
+with open("ors_key.txt", "r") as kf:
+	ors_key = kf.readline()
+
+ors_headers = {
+    'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+    'Authorization': ors_key,
+    'Content-Type': 'application/json; charset=utf-8'
+}
+
+POINTS_NUM = 15
+POINTS_RANGE = 30
+
+WH_AMOUNT = 1
+wh_x, wh_y = 0, 0
 
 points = []
-for i in range(POINTS_NUM):
-	points.append( (random.randint(0, POINTS_RANGE), random.randint(0, POINTS_RANGE)) )
+if debug:
+	for i in range(POINTS_NUM):
+		points.append( (random.randint(0, POINTS_RANGE), random.randint(0, POINTS_RANGE)) )
+else:
+	with open(args.points_file, "r") as gps_file:
+		POINTS_NUM = int(gps_file.readline())
+		for i in range(POINTS_NUM):
+			line = tuple( float(part) for part in gps_file.readline().split(';') )
+			assert len(line) == 2
+			points.append((line[0], line[1]))
+
+# scatter points
+if "points.png" not in os.listdir():
+	plt.scatter( [ p[0] for p in points ], [ p[1] for p in points ])
+	plt.savefig("points.png")
+	plt.clf()
+	print("Created plot for point visualization in 'points.png'")
 
 # create nodes
-first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
+#first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
 # add neighbours
-for n in first_nodes:
-	for n2 in first_nodes:
-		if n2 != n:
-			n.add_neighbour(n2)
+# for n in first_nodes:
+# 	for n2 in first_nodes:
+# 		if n2 != n:
+#			n.add_neighbour(n2)
 
-def Index_node_in_points(node, points):
-	for i in range(len(points)):
-		if node.X == points[i][0] and node.Y == points[i][1]:
-			return i
-	return -1
+# def Index_node_in_points(node, points):
+# 	for i in range(len(points)):
+# 		if node.X == points[i][0] and node.Y == points[i][1]:
+# 			return i
+# 	return -1
 
-route = [ Index_node_in_points(node, points) for
-		node in min_span_tree.TSP_aproximate(first_nodes) ]
+# route = [ Index_node_in_points(node, points) for
+# 		node in min_span_tree.TSP_aproximate(first_nodes) ]
 
+@functools.lru_cache(maxsize=None)
 def GetDistance(point1, point2):
-	return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
+	if use_ors:
+		ors_body = {"coordinates":[list(point1),list(point2)]}
+		reason = ""
+		while reason != "OK":
+			resp = post('https://api.openrouteservice.org/v2/directions/driving-car', json=ors_body, headers=ors_headers)
+			reason = resp.reason
+			if reason != "OK":
+				print( "Reason: {}".format(reason) )
+				time.sleep(60)
+		jsonObj = json.loads(resp.text)
+		if use_distance:
+			return float(jsonObj["routes"][0]["summary"]["distance"])
+		elif use_speed:
+			return float(jsonObj["routes"][0]["summary"]["duration"])
+	elif use_geopy:
+		return distance.distance(point1, point2).km
+	else:
+		return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
 
-distance_map = [ [ GetDistance(p1, p2) for p2 in points] for p1 in points]
+# distance_map = [ [ GetDistance(p1, p2) for p2 in points] for p1 in points]
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-creator.create("Individual", array.array, typecode='f', fitness=creator.FitnessMin)
+# creator.create("Individual", array.array, typecode='f', fitness=creator.FitnessMin,
+# 				path=None)
+creator.create("Individual", list, fitness=creator.FitnessMin,
+				path=None)
 
 toolbox = base.Toolbox()
 
@@ -65,22 +142,30 @@ def no_shuffle_TSP(route):
 	return route
 
 def evalTSP(TSPIndividual):
-	wh_x, wh_y = TSPIndividual[0], TSPIndividual[1]
+	#wh_x, wh_y = TSPIndividual[0], TSPIndividual[1]
 	distance = 0
-	for pair in [ (TSPIndividual[i-1], TSPIndividual[i]) for i in range(1, len(TSPIndividual)) ]:
-		gene1 = pair[0]
-		gene2 = pair[1]
-		distance += distance_map[gene1][gene2]
-	distance += GetDistance((wh_x, wh_y), points[TSPIndividual[0]])
-	distance += GetDistance((wh_x, wh_y), points[TSPIndividual[-1]])
+	for gene1, gene2 in [ (TSPIndividual[i], TSPIndividual[i+1]) for i in range(len(TSPIndividual) - 1)]:
+		#print(gene1, gene2)
+		if gene1 == len(points):
+			point1 = (wh_x, wh_y)
+		else:
+			point1 = points[gene1]
+		if gene2 == len(points):
+			point2 = (wh_x, wh_y)
+		else:
+			point2 = points[gene2]
+		#print(point1, point2)
+		distance += GetDistance(point1, point2)
 	return distance,
 
-def evalFunc(individual):
+def evalFunc(individual, NGEN = 1_000, save_path = False, osmr = False):
+	global wh_x, wh_y
+	wh_x, wh_y = individual[0][0], individual[0][1]
 	toolbox = base.Toolbox()
 
 	# Attribute generator
-	toolbox.register("TSPindices", random.sample, range(POINTS_NUM), POINTS_NUM)
-	# toolbox.register("TSPindices", shuffle_TSP, route)	
+	toolbox.register("TSPindices", random.sample, range(POINTS_NUM + 1), POINTS_NUM + 1)
+	# toolbox.register("TSPindices", shuffle_TSP, route)
 
 	# Structure initializers
 	toolbox.register("TSPindividual", tools.initIterate, creator.TSPIndividual, toolbox.TSPindices)
@@ -89,101 +174,118 @@ def evalFunc(individual):
 	toolbox.register("mate", tools.cxPartialyMatched)
 	toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
 	toolbox.register("select", tools.selTournament, tournsize=5)
-	#toolbox.register("select", tools.selRoulette)
 	toolbox.register("evaluate", evalTSP)
 
-	NGEN = 500 # amount of generations
-	MU = 100 # amount of individuals to select from each generation (possible parents)
-	LAMBDA = 150 # number of new children for each generation
-	CXPB = 0.5 # probability of mating
-	MUTPB = 0.02 # mutation probability
+	MU = 20 # amount of individuals to select from each generation (possible parents)
+	LAMBDA = 50 # number of new children for each generation
+	CXPB = 0.2 # probability of mating
+	MUTPB = 0.6 # mutation probability
 
 	pop = toolbox.TSPpopulation(n=MU)
 
 	hof = tools.HallOfFame(1)
-	stats = tools.Statistics(lambda ind: ind.fitness.values)
-	stats.register("avg", numpy.mean)
-	#stats.register("std", numpy.std)
-	stats.register("min", numpy.min)
+	#stats = tools.Statistics(lambda ind: ind.fitness.values)
 	#stats.register("max", numpy.max)
-	
-	# pop, logbook = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=stats, 
+	#stats.register("avg", np.mean)
+	#stats.register("std", numpy.std)
+	#stats.register("min", np.min)
+
+	# pop, logbook = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=stats,
 	# 					halloffame=hof, verbose=False)
 
 	_, _ = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-						stats=stats, halloffame=hof, verbose=False)
-	
-	# pop, logbook = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-	# 	stats = stats, halloffame=hof, verbose=False)
+						halloffame=hof, verbose=False)
 
-	individual.path = [ x for x in hof[0] ]
-	value = evalTSP(hof[0])
-	# if best_path_value is None or best_path_value > value[0]:
-	# 	best_path_value = value[0]
-	# 	best_path = [ x for x in hof[0] ]
-	return value
+	# _, _ = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 					halloffame=hof, verbose=False)
+
+	if save_path:
+		individual.path = [ x for x in hof[0] ]
+	value = hof[0].fitness.getValues()[0]
+	#value, = evalTSP(hof[0])
+	if use_geopy:
+		#print( "Warehouse {} evaluation: {}".format(individual[0], value) )
+		pass
+	return value,
+	# value = hof[0].fitness
+	# print("Value: {}".format((value,)))
+	# return value[0],
 
 # Attribute generator
-attributes = [ x[0] for x in points ] + [ x[1] for x in points ]
-low, up = min(attributes), max(attributes)
-toolbox.register("point_attr", random.uniform, low, up)
+x_attributes = [ x[0] for x in points ] # + [ x[1] for x in points ]
+x_low, x_up = min(x_attributes), max(x_attributes)
+y_attributes = [ x[1] for x in points ]
+y_low, y_up = min(y_attributes), max(y_attributes)
+def create_warehouse(x_low, x_high, y_low, y_high):
+	return ( random.uniform(x_low, x_high), random.uniform(y_low, y_high))
+
+toolbox.register("point_attr", create_warehouse, x_low=x_low, x_high=x_up,
+				y_low=y_low, y_high=y_up)
+# attributes = [ x[0] for x in points ] + [ x[1] for x in points ]
+# low, up = min(attributes), max(attributes)
+#toolbox.register("point_attr", random.uniform, low, up)
 
 # Structure initializers
-toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.point_attr, 2)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.point_attr, WH_AMOUNT)
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
 def mateWarehouse(ind1, ind2):
+	# update to new type of warehouse
 	child1 = creator.Individual()
-	child1.append(ind1[0] + (ind2[0] - ind1[0])*random.random())
-	child1.append(ind1[1] + (ind2[1] - ind1[1])*random.random())
 	child2 = creator.Individual()
-	child2.append(ind2[0] + (ind1[0] - ind2[0])*random.random())
-	child2.append(ind2[1] + (ind1[1] - ind2[1])*random.random())
+	for i in range(WH_AMOUNT):
+		rand1 = random.random()
+		rand2 = random.random()
+		child1.append( (rand1*ind1[i][0] + (1-rand1)*ind2[i][0], rand2*ind1[i][1] + (1-rand2)*ind2[i][1]) )
+		child2.append( (rand1*ind2[i][0] + (1-rand1)*ind1[i][0], rand2*ind2[i][1] + (1-rand2)*ind1[i][1]) )
+	# child2.append(ind2[0] + (ind1[0] - ind2[0])*random.random())
+	# child2.append(ind2[1] + (ind1[1] - ind2[1])*random.random())
 	return ( child1, child2 )
 
 def mutateWarehouse(individual):
-	index = random.randint(0,1)
-	individual[index] = toolbox.point_attr()
-	individual.is_mutated = True
+	rand_step = np.random.normal(size=len(individual)*2)
+	for i in range(len(individual)):
+		rand_step = np.random.normal(size=2)
+		individual[i] = ( individual[i][0] + 0.001 * rand_step[0], individual[i][1] + 0.001 * rand_step[1] )
 	return individual,
 
 toolbox.register("evaluate", evalFunc)
 toolbox.register("mate", mateWarehouse)
-#toolbox.register("mutate", tools.mutFlipBit, indpb=0.05)
-#toolbox.register("mutate", tools.mutUniformInt, low=low, up=up, indpb=0.05)
 toolbox.register("mutate", mutateWarehouse)
-toolbox.register("select", tools.selTournament, tournsize=3)
+toolbox.register("select", tools.selRoulette)
+#toolbox.register("select", tools.selTournament, tournsize=3)
 
-def main():
+def main(pool):
 
-	NGEN = 20 # amount of generations
+	NGEN = 15 # amount of generations
 	MU = 40 # amount of individuals to select from each generation (possible parents)
-	LAMBDA = 60 # number of new children for each generation
-	CXPB = 0.6 # probability of mating
-	MUTPB = 0.2 # mutation probability
-	
-	cpu_count = int(multiprocessing.cpu_count() / 2)
-	print("Running on {} CPU cores.".format(cpu_count))
-	pool = multiprocessing.Pool(processes=cpu_count)
-	toolbox.register("map", pool.map)
+	LAMBDA = 50 # number of new children for each generation
+	CXPB = 0.5 # probability of mating
+	MUTPB = 0.25 # mutation probability
+
+	if use_multiproc:
+		toolbox.register("map", pool.map)
 
 	pop = toolbox.population(n=MU)
 	hof = tools.HallOfFame(1)
-	stats = tools.Statistics(lambda ind: ind.fitness.values)
-	stats.register("avg", numpy.mean)
-	#stats.register("std", numpy.std)
-	stats.register("min", numpy.min)
-	#stats.register("max", numpy.max)
-	
-	# pop, log = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=NGEN, 
+	stats = tools.Statistics( lambda ind: ind.fitness.values )
+	#stats.register("max", np.max)
+	stats.register("avg", np.mean)
+	#stats.register("std", np.std)
+	stats.register("min", np.min)
+
+	# pop, log = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=NGEN,
 	#                                stats=stats, halloffame=hof, verbose=True)
 
-	pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-						stats=stats, halloffame=hof, verbose=True)
-	
+	# pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 								stats=stats, halloffame=hof, verbose=True)
+
+	pop, log = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+									stats=stats, halloffame=hof, verbose=True)
+
 	return pop, log, hof
 
-def GenerateProgressFigure(gen_vals, best_vals, avg_vals):
+def GenerateProgressFigure(gen_vals, best_vals, avg_vals, run_num):
 	plt.plot(gen_vals, best_vals)
 	plt.plot(gen_vals, avg_vals)
 	#plt.plot(gen_vals, worst_vals)
@@ -192,11 +294,14 @@ def GenerateProgressFigure(gen_vals, best_vals, avg_vals):
 	plt.ylabel("Distance")
 	#plt.show()
 	plt.title("Progress")
-	plt.savefig("master-progress.png")
+	if use_geopy:
+		plt.savefig("geo-progress-{}.png".format(run_num))
+	else:
+		plt.savefig("progress-{}.png".format(run_num))
 	plt.clf()
 
-def GenerateBestPath(wh_point, path):
-	ordered_points = [wh_point] + [ points[x] for x in path]
+def GenerateBestPath(wh_point, path, run_num):
+	ordered_points = [ points[x] if x < len(points) else wh_point for x in path]
 	distance = sum([ GetDistance(p1, p2) for p1, p2 in [ (ordered_points[i-1], ordered_points[i]) for i in range(len(ordered_points))] ])
 
 	#pairs = zip(ordered_points[-1:], ordered_points[0:])
@@ -207,22 +312,43 @@ def GenerateBestPath(wh_point, path):
 	plt.scatter( [ x[0] for x in ordered_points if x != wh_point ], [ x[1] for x in ordered_points if x != wh_point ], color="g", marker="o")
 	plt.scatter([wh_point[0]], [wh_point[1]], color="r", marker="o")
 	plt.title("Distance: {}".format(distance))
-	plt.savefig("master-solution.png")
+	if use_geopy:
+		plt.savefig("geo-solution-{}.png".format(run_num))
+	else:
+		plt.savefig("solution-{}.png".format(run_num))
 	plt.clf()
 
 if __name__ == "__main__":
-	_, logbook, hof = main()
 
-	print("Generating progress figure...")
-	gen_vals   = [ x["gen"] for x in logbook ]
-	best_vals  = [ x["min"] for x in logbook ]
-	avg_vals   = [ x["avg"] for x in logbook ]
-	GenerateProgressFigure(gen_vals, best_vals, avg_vals)
+	args = parser.parse_args([] if "__file__" not in globals() else None)
 
-	best = hof[0]
-	print(best)
-	wh_x, wh_y = best[0], best[1]
-	path = best.path
-	GenerateBestPath((wh_x, wh_y), path)
-	print("Best position for warehouse: {}".format( (wh_x, wh_y) ))
-	print("Best value: {}".format(best.fitness))
+	if use_multiproc:
+		print("Running on {} CPU cores.".format(args.cores))
+		pool = multiprocessing.Pool(processes=args.cores)
+
+	for i in range(args.runs):
+		print("{}. run in progress...".format(i+1))
+		if use_multiproc:
+			_, logbook, hof = main(pool)
+		else:
+			_, logbook, hof = main(None)
+
+		print("Generating progress figure...")
+		gen_vals   = [ x["gen"] for x in logbook ]
+		best_vals  = [ x["min"] for x in logbook ]
+		avg_vals   = [ x["avg"] for x in logbook ]
+		GenerateProgressFigure(gen_vals, best_vals, avg_vals, i+1)
+
+		best = hof[0]
+		print(best)
+		#wh_x, wh_y = best[0][0], best[0][1]
+		wh_x, wh_y = None, None
+		print("Generating path for the best warehouse placement...")
+		evalFunc(best, NGEN=50_000, save_path=True)
+		print("Done")
+		path = best.path
+		GenerateBestPath(best[0], path, i+1)
+		print("Best position for warehouse: {}".format( best[0] ))
+		print("Best value: {}".format(best.fitness))
+	if use_multiproc:
+		pool.close()
