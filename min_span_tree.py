@@ -45,8 +45,8 @@ class Node(object):
         return str(self) == str(other)
     
     def __hash__(self):
-        return self.X * self.Y + hash(self.Name)
-    
+        return int( self.X * self.Y + hash(self.Name) )
+
     def __str__(self):
         return "Name={}, X={}, Y={}".format(self.Name, self.X, self.Y)
 

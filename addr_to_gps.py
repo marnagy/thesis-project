@@ -16,6 +16,7 @@ def get_coords(addr: str):
     resp = requests.get('https://api.openrouteservice.org/geocode/search?api_key={}&text={}'.format(ors_key, addr), headers=headers)
     assert resp.status_code == 200
     json_obj = json.loads(resp.text)
+    print(json_obj)
     return json_obj["features"][0]["geometry"]["coordinates"]
 
 adresses = []

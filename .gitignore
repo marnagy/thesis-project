@@ -1,7 +1,11 @@
+# directories
+/__pycache__
+/.vscode
+
+# files
 /*.txt
 /*.log
 /*.png
 /*.gif
 /knapsack.py
-/__*
 /*.csv

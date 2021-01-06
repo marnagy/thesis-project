@@ -37,7 +37,7 @@ args = parser.parse_args([] if "__file__" not in globals() else None)
 
 use_geopy = False
 use_ors = False
-use_distance = True
+use_distance = False
 use_speed = False
 
 # check use_ params
@@ -78,19 +78,19 @@ else:
 			points.append((line[0], line[1]))
 
 # scatter points
-if "points.png" not in os.listdir():
-	plt.scatter( [ p[0] for p in points ], [ p[1] for p in points ])
-	plt.savefig("points.png")
-	plt.clf()
-	print("Created plot for point visualization in 'points.png'")
+# if "points.png" not in os.listdir():
+# 	plt.scatter( [ p[0] for p in points ], [ p[1] for p in points ])
+# 	plt.savefig("points.png")
+# 	plt.clf()
+# 	print("Created plot for point visualization in 'points.png'")
 
-# create nodes
-#first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
-# add neighbours
+# # create nodes
+# first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
+# # add neighbours
 # for n in first_nodes:
 # 	for n2 in first_nodes:
 # 		if n2 != n:
-#			n.add_neighbour(n2)
+# 			n.add_neighbour(n2)
 
 # def Index_node_in_points(node, points):
 # 	for i in range(len(points)):
@@ -103,21 +103,7 @@ if "points.png" not in os.listdir():
 
 @functools.lru_cache(maxsize=None)
 def GetDistance(point1, point2):
-	if use_ors:
-		ors_body = {"coordinates":[list(point1),list(point2)]}
-		reason = ""
-		while reason != "OK":
-			resp = post('https://api.openrouteservice.org/v2/directions/driving-car', json=ors_body, headers=ors_headers)
-			reason = resp.reason
-			if reason != "OK":
-				print( "Reason: {}".format(reason) )
-				time.sleep(60)
-		jsonObj = json.loads(resp.text)
-		if use_distance:
-			return float(jsonObj["routes"][0]["summary"]["distance"])
-		elif use_speed:
-			return float(jsonObj["routes"][0]["summary"]["duration"])
-	elif use_geopy:
+	if use_geopy:
 		return distance.distance(point1, point2).km
 	else:
 		return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
@@ -136,7 +122,9 @@ creator.create("TSPIndividual", array.array, typecode='i', fitness=creator.Fitne
 
 def shuffle_TSP(route):
 	start_index = random.randint(-len(route) + 1, 0)
-	return [ route[i] for i in range(start_index,len(route) + start_index) ]
+	res = [ route[i] for i in range(start_index,len(route) + start_index) ]
+	print(res)
+	return res
 
 def no_shuffle_TSP(route):
 	return route
@@ -158,22 +146,22 @@ def evalTSP(TSPIndividual):
 		distance += GetDistance(point1, point2)
 	return distance,
 
-def evalFunc(individual, NGEN = 1_000, save_path = False, osmr = False):
+def evalFunc(individual, NGEN = 2_000, save_path = False, osmr = False):
 	global wh_x, wh_y
 	wh_x, wh_y = individual[0][0], individual[0][1]
 	toolbox = base.Toolbox()
 
 	# Attribute generator
 	toolbox.register("TSPindices", random.sample, range(POINTS_NUM + 1), POINTS_NUM + 1)
-	# toolbox.register("TSPindices", shuffle_TSP, route)
+	#toolbox.register("TSPindices", shuffle_TSP, route)
 
 	# Structure initializers
 	toolbox.register("TSPindividual", tools.initIterate, creator.TSPIndividual, toolbox.TSPindices)
 	toolbox.register("TSPpopulation", tools.initRepeat, list, toolbox.TSPindividual)
 
-	toolbox.register("mate", tools.cxPartialyMatched)
+	toolbox.register("mate", tools.cxOrdered)
 	toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
-	toolbox.register("select", tools.selTournament, tournsize=5)
+	toolbox.register("select", tools.selTournament, tournsize=3)
 	toolbox.register("evaluate", evalTSP)
 
 	MU = 20 # amount of individuals to select from each generation (possible parents)
@@ -203,13 +191,7 @@ def evalFunc(individual, NGEN = 1_000, save_path = False, osmr = False):
 		individual.path = [ x for x in hof[0] ]
 	value = hof[0].fitness.getValues()[0]
 	#value, = evalTSP(hof[0])
-	if use_geopy:
-		#print( "Warehouse {} evaluation: {}".format(individual[0], value) )
-		pass
 	return value,
-	# value = hof[0].fitness
-	# print("Value: {}".format((value,)))
-	# return value[0],
 
 # Attribute generator
 x_attributes = [ x[0] for x in points ] # + [ x[1] for x in points ]
@@ -257,11 +239,11 @@ toolbox.register("select", tools.selRoulette)
 
 def main(pool):
 
-	NGEN = 15 # amount of generations
-	MU = 40 # amount of individuals to select from each generation (possible parents)
-	LAMBDA = 50 # number of new children for each generation
-	CXPB = 0.5 # probability of mating
-	MUTPB = 0.25 # mutation probability
+	NGEN = 30 # amount of generations
+	MU = 20 # amount of individuals to select from each generation (possible parents)
+	LAMBDA = 40 # number of new children for each generation
+	CXPB = 0.7 # probability of mating
+	MUTPB = 0.2 # mutation probability
 
 	if use_multiproc:
 		toolbox.register("map", pool.map)
@@ -269,19 +251,19 @@ def main(pool):
 	pop = toolbox.population(n=MU)
 	hof = tools.HallOfFame(1)
 	stats = tools.Statistics( lambda ind: ind.fitness.values )
-	#stats.register("max", np.max)
+	stats.register("std", np.std)
+	stats.register("max", np.max)
 	stats.register("avg", np.mean)
-	#stats.register("std", np.std)
 	stats.register("min", np.min)
 
 	# pop, log = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=NGEN,
 	#                                stats=stats, halloffame=hof, verbose=True)
 
-	# pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
-	# 								stats=stats, halloffame=hof, verbose=True)
-
-	pop, log = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
 									stats=stats, halloffame=hof, verbose=True)
+
+	# pop, log = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 								stats=stats, halloffame=hof, verbose=True)
 
 	return pop, log, hof
 
@@ -344,7 +326,7 @@ if __name__ == "__main__":
 		#wh_x, wh_y = best[0][0], best[0][1]
 		wh_x, wh_y = None, None
 		print("Generating path for the best warehouse placement...")
-		evalFunc(best, NGEN=50_000, save_path=True)
+		evalFunc(best, NGEN=100_000, save_path=True)
 		print("Done")
 		path = best.path
 		GenerateBestPath(best[0], path, i+1)
