@@ -11,6 +11,7 @@ from requests import post
 from geopy import distance
 import json
 import requests
+from pprint import pprint
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -28,7 +29,7 @@ import min_span_tree
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--seed", default=64, type=int, help="Random seed")
-parser.add_argument("--cores", default=multiprocessing.cpu_count(),
+parser.add_argument("--cores", default=multiprocessing.cpu_count()//2,
 	type=int, help="Core count for multi processing")
 parser.add_argument("--runs", default=5, type=int, help="Amount of runs")
 parser.add_argument("--points_file", default="gps_coords.txt",
@@ -38,8 +39,8 @@ args = parser.parse_args([] if "__file__" not in globals() else None)
 
 #random.seed(args.seed)
 
-use_osmnx_fastapi = True
-use_osmnx_flask = False
+use_osmnx_fastapi = False
+use_osmnx_flask = True
 use_geopy = False
 
 # check use_ params
@@ -47,12 +48,12 @@ assert int(use_geopy) + int(use_osmnx_flask) + int(use_osmnx_fastapi) <= 1
 
 use_multiproc = True
 
-debug = False
-
-POINTS_NUM = 15
-POINTS_RANGE = 30
-
+debug = True
 WH_AMOUNT = 1
+
+# debug
+POINTS_NUM = 4
+POINTS_RANGE = 30
 wh_x, wh_y = 0, 0
 
 points = []
@@ -67,56 +68,9 @@ else:
 			assert len(line) == 2
 			points.append((line[0], line[1]))
 
-# scatter points
-# if "points.png" not in os.listdir():
-# 	plt.scatter( [ p[0] for p in points ], [ p[1] for p in points ])
-# 	plt.savefig("points.png")
-# 	plt.clf()
-# 	print("Created plot for point visualization in 'points.png'")
-
-# # create nodes
-# first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
-# # add neighbours
-# for n in first_nodes:
-# 	for n2 in first_nodes:
-# 		if n2 != n:
-# 			n.add_neighbour(n2)
-
-# def Index_node_in_points(node, points):
-# 	for i in range(len(points)):
-# 		if node.X == points[i][0] and node.Y == points[i][1]:
-# 			return i
-# 	return -1
-
-# route = [ Index_node_in_points(node, points) for
-# 		node in min_span_tree.TSP_aproximate(first_nodes) ]
-
 @functools.lru_cache(maxsize=None)
 def GetDistance(point1, point2):
-	if use_osmnx_fastapi:
-		resp = requests.get("http://localhost:5000/distance/{}:{};{}:{}".format(
-			point1[0], point1[1],
-			point2[0], point2[1],
-		))
-		dict_obj = resp.json()
-		dist_meters = float(dict_obj['distance'])
-		# return km
-		distance = dist_meters / 1_000.0
-		return distance
-	elif use_osmnx_flask:
-		resp = requests.get("http://localhost:5000/shortest/{}:{};{}:{}".format(
-			point1[0], point1[1],
-			point2[0], point2[1],
-		))
-		dict_obj = resp.json()
-		dist_meters = float(dict_obj['meters_distance'])
-		# return km
-		distance = dist_meters / 1_000.0
-		return distance
-	elif use_geopy:
-		return distance.distance(point1, point2).km
-	else:
-		return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
+	return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
 
 # distance_map = [ [ GetDistance(p1, p2) for p2 in points] for p1 in points]
 
@@ -128,7 +82,7 @@ creator.create("Individual", list, fitness=creator.FitnessMin,
 
 toolbox = base.Toolbox()
 
-creator.create("TSPIndividual", array.array, typecode='i', fitness=creator.FitnessMin)
+creator.create("TSP_Individual", list, fitness=creator.FitnessMin)
 
 def shuffle_TSP(route):
 	start_index = random.randint(-len(route) + 1, 0)
@@ -139,42 +93,89 @@ def shuffle_TSP(route):
 def no_shuffle_TSP(route):
 	return route
 
+def random_shuffle(points):
+	points2 = points[:]
+	random.shuffle(points2)
+	return points2
+
+def custom_pmx(p1, p2):
+	point1 = random.randrange(1, len(p1))
+	point2 = random.randrange(1, len(p1))
+	start = min(point1, point2)
+	end = max(point1, point2)
+
+	# swap the middle parts
+	o1mid = p2[start:end]
+	o2mid = p1[start:end]
+
+	o1 = creator.TSP_Individual()
+	o2 = creator.TSP_Individual()
+
+	for index in range(len(p1)):
+		val1 = p2[index]
+		if start <= index < end:
+			o1.append(o1mid[index - start])
+		else:
+			while val1 in o1mid:
+				val1 = p2[p1.index(val1)]
+			else:
+				o1.append(p2[index])
+		val2 = p1[index]
+		if start <= index < end:
+			o2.append(o2mid[index - start])
+		else:
+			while val2 in o2mid:
+				val2 = p1[p2.index(val2)]
+			else:
+				o2.append(p1[index])
+	#print("TSP children created")
+	return ( o1, o2 )
+
 def evalTSP(TSPIndividual):
 	#wh_x, wh_y = TSPIndividual[0], TSPIndividual[1]
-	if use_osmnx_flask:
-		resp = requests.put("http://localhost:5000/path", data={
-			'points': list(map())
-		})
 	distance = 0
-	for gene1, gene2 in [ (TSPIndividual[i], TSPIndividual[i+1]) for i in range(len(TSPIndividual) - 1)]:
+	# if use_osmnx_flask:
+	# 	#data = [ list(point) for point in TSPIndividual ]
+	# 	resp = requests.post("http://localhost:5000/path", json={
+	# 		'points': [ [x[0], x[1]] for x in TSPIndividual ]
+	# 	})
+	# 	json_obj = resp.json()
+	# 	#print(json_obj)
+	# 	distance = json_obj['distance']
+	# else:
+	#for point1, point2 in zip(TSPIndividual[-1:], TSPIndividual):
+	for point1, point2 in zip(TSPIndividual[-1:], TSPIndividual):
 		#print(gene1, gene2)
-		if gene1 == len(points):
-			point1 = (wh_x, wh_y)
-		else:
-			point1 = points[gene1]
-		if gene2 == len(points):
-			point2 = (wh_x, wh_y)
-		else:
-			point2 = points[gene2]
-		#print(point1, point2)
-		distance += GetDistance(point1, point2)
+		# if gene1 == len(points):
+		# 	point1 = (wh_x, wh_y)
+		# else:
+		# 	point1 = points[gene1]
+		# if gene2 == len(points):
+		# 	point2 = (wh_x, wh_y)
+		# else:
+		# 	point2 = points[gene2]
+		# #print(point1, point2)
+		distance += GetDistance(tsp_points[point1], tsp_points[point2])
 	return distance,
 
-def evalFunc(individual, NGEN = 5_000, save_path = False):
-	global wh_x, wh_y
+def evalFunc(individual, NGEN = 500, save_path = False):
+	global tsp_points
 	wh_x, wh_y = individual[0][0], individual[0][1]
 	toolbox = base.Toolbox()
 
+	tsp_points = [(wh_x, wh_y)] + points
+
 	# Attribute generator
-	toolbox.register("TSPindices", random.sample, range(POINTS_NUM + 1), POINTS_NUM + 1)
+	toolbox.register("TSP_Points", random.sample, range(len(points) + 1), len(points) + 1)
 	#toolbox.register("TSPindices", shuffle_TSP, route)
 
 	# Structure initializers
-	toolbox.register("TSPindividual", tools.initIterate, creator.TSPIndividual, toolbox.TSPindices)
-	toolbox.register("TSPpopulation", tools.initRepeat, list, toolbox.TSPindividual)
+	toolbox.register("TSP_Individual", tools.initIterate, creator.TSP_Individual, toolbox.TSP_Points)
+	toolbox.register("TSPpopulation", tools.initRepeat, list, toolbox.TSP_Individual)
 
 	#toolbox.register("mate", tools.cxOrdered)
 	toolbox.register("mate", tools.cxPartialyMatched)
+	#toolbox.register("mate", custom_pmx)
 	toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
 	toolbox.register("select", tools.selTournament, tournsize=3)
 	toolbox.register("evaluate", evalTSP)
@@ -203,7 +204,7 @@ def evalFunc(individual, NGEN = 5_000, save_path = False):
 						halloffame=hof, verbose=False)
 
 	if save_path:
-		individual.path = [ x for x in hof[0] ]
+		individual.path = [ tsp_points[x] for x in hof[0] ]
 	value = hof[0].fitness.getValues()[0]
 	#value, = evalTSP(hof[0])
 	return value,
@@ -252,7 +253,7 @@ toolbox.register("mutate", mutateWarehouse)
 toolbox.register("select", tools.selRoulette)
 #toolbox.register("select", tools.selTournament, tournsize=3)
 
-def main(pool):
+def main_ga(pool):
 
 	NGEN = 30 # amount of generations
 	MU = 10 # amount of individuals to select from each generation (possible parents)
@@ -266,13 +267,13 @@ def main(pool):
 	pop = toolbox.population(n=MU)
 	hof = tools.HallOfFame(1)
 	stats = tools.Statistics( lambda ind: ind.fitness.values )
-	stats.register("std", np.std)
-	stats.register("max", np.max)
+	stats.register("std", np.std )
+	stats.register("max", np.max )
 	stats.register("avg", np.mean)
-	stats.register("min", np.min)
+	stats.register("min", np.min )
 
 	pop, log = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=NGEN,
-	                               stats=stats, halloffame=hof, verbose=True)
+								   stats=stats, halloffame=hof, verbose=True)
 
 	# pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
 	# 								stats=stats, halloffame=hof, verbose=True)
@@ -332,9 +333,9 @@ if __name__ == "__main__":
 	for i in range(args.runs):
 		print("{}. run in progress...".format(i+1))
 		if use_multiproc:
-			_, logbook, hof = main(pool)
+			_, logbook, hof = main_ga(pool)
 		else:
-			_, logbook, hof = main(None)
+			_, logbook, hof = main_ga(None)
 
 		print("Generating progress figure...")
 		gen_vals   = [ x["gen"] for x in logbook ]
@@ -347,7 +348,7 @@ if __name__ == "__main__":
 		#wh_x, wh_y = best[0][0], best[0][1]
 		wh_x, wh_y = None, None
 		print("Generating path for the best warehouse placement...")
-		evalFunc(best, NGEN=5_000, save_path=True)
+		evalFunc(best, NGEN=1_000, save_path=True)
 		print("Done")
 		path = best.path
 		GenerateBestPath(best[0], path, i+1)

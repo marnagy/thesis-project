@@ -9,3 +9,15 @@
 /*.gif
 /knapsack.py
 /*.csv
+
+# rest api
+/rest/cache
+/rest/*.osm
+/rest/__pycache__
+
+# Rust
+/tsp/target
+/tsp
+
+# C#
+/csharp-console/obj
