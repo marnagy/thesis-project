@@ -59,12 +59,20 @@ namespace csharp_console
 
 			var response = await client.SendAsync(msg);
 			string content = await response.Content.ReadAsStringAsync();
+			//try
+			//{
 			var json = JsonConvert.DeserializeObject<Dictionary<string, double>>(content);
-
 			if (distance)
 				return json["meters_distance"];
 			else
 				return json["travel_time"];
+
+			//}
+			//catch (Exception e)
+			//{
+			//	int a = 5;
+			//	return 100_000;
+			//}
 		}
 	}
 }

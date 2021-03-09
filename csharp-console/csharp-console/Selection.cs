@@ -17,7 +17,7 @@ namespace csharp_console
 			for (int i = 0; i < amount; i++)
 			{
 				var temp = population[rand.Next(population.Count)];
-				if (temp.Fitness.Value > p1.Fitness.Value)
+				if (temp.Fitness > p1.Fitness)
 					p1 = temp;
 			}
 
@@ -25,7 +25,7 @@ namespace csharp_console
 			for (int i = 0; i < amount; i++)
 			{
 				var temp = population[rand.Next(population.Count)];
-				if (temp.Fitness.Value > p2.Fitness.Value)
+				if (temp.Fitness > p2.Fitness)
 					p2 = temp;
 			}
 			return (p1, p2);

@@ -13,7 +13,7 @@ namespace csharp_console.Mutations
 		public async static Task Swap(WarehousesChromosome whc)
 		{
 			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
-			double oldFitness = wh.Fitness.HasValue ? wh.Fitness.Value : 100_000d ;
+			double oldFitness = wh.Fitness;
 			List<PointD> route = wh.CarRoutes[ rand.Next(wh.CarsAmount) ];
 			int length = route.Count;
 			if (length < 2)
@@ -35,9 +35,11 @@ namespace csharp_console.Mutations
 			route[index2] = temp;
 
 			double newFitness = await wh.ComputeDistanceAndSave();
+			//whc.UpdateFitness();
 			if (newFitness < oldFitness)
 			{
-				whc.Fitness = whc.Fitness.Value - oldFitness + newFitness;
+				whc.UpdateFitness();
+				//whc. Fitness = whc.Fitness.Value - oldFitness + newFitness;
 				return;
 			}
 			else

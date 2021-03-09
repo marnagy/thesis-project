@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using QuickGraph;
 
 namespace csharp_console
 {
@@ -16,7 +15,7 @@ namespace csharp_console
 		public PointD Point;
 		public readonly int CarsAmount;
 		public readonly List<PointD>[] CarRoutes;
-		public double? Fitness { get; set; }
+		public double Fitness { get; set; }
 		public Warehouse(double lat, double lon, int cars)
 		{
 			Point = new PointD(lat, lon);
@@ -37,7 +36,13 @@ namespace csharp_console
 
 		public Warehouse Clone()
 		{
-			return new Warehouse(this.Point.X, this.Point.Y, this.CarsAmount);
+			var wh = new Warehouse(this.Point.X, this.Point.Y, this.CarsAmount);
+			for (int i = 0; i < CarsAmount; i++)
+			{
+				wh.CarRoutes[i] = new List<PointD>(this.CarRoutes[i]);
+			}
+			wh.Fitness = this.Fitness;
+			return wh;
 		}
 
 		internal void InsertToCar(int carIndex, PointD coord)
