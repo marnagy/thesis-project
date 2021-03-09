@@ -1,32 +1,34 @@
-### Project demo
+### addresses_overpass.py
 
-1 warehouse 1 truck demo -> https://youtu.be/c6Ys4W7HJ9w
+- get n shops in Prague using: python addresses_overpass.py --amount=n > [output file]
 
-### addresses.py
+### csharp_console
 
-Used for getting addresses of random shops in Prague
+- Stores project of C# client implementation using async for maximum speed
 
-### chromedriver.exe
+- outputs to directory "csharp-results"
 
-Necessary driver for selenium used in addresses.py
+### rest derectory
+
+- Stores scripts for using osmnx module
+- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
 
 ### main-deap.py
 
-Main GA algorithm using DEAP module
+Main GA algorithm using DEAP module [deprecated]
 
 ### main.py
 
-Main custom program of GA
+Main custom program of GA [deprecated]
 
 ### tsp.py
 
-GA using deap library and generating tsp-progress.png and tsp-solution.png images
+GA using deap library and generating tsp-progress.png and tsp-solution.png images [deprecated]
 
-## To Do:
 
-- [x] Implement GA solving TSP
 
 # Main GA
+
 ## Goal
 Find the best location for a Warehouse
 
