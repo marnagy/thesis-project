@@ -20,4 +20,13 @@
 /tsp
 
 # C#
-/csharp-console/obj
+/csharp-console/.vs
+/csharp-console/csharp-console/bin
+/csharp-console/csharp-console/obj
+
+# C# results
+/csharp_results
+
+# test files
+/ox_test
+/test_inputs

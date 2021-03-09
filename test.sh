@@ -1,1 +1,0 @@
-python addresses.py > addr.txt && python addr_to_gps.py < addr.txt > gps.txt && python main-deap.py --points_file=gps.txt --runs=1
