@@ -1,30 +1,46 @@
 # The algorithm
 
-- To be added
+- client program uses Evolutionary Strategies (ES) to find the best solution
+- client runs serveral times and saves best solution from each run to output directory
+- 
+## Mutations
+### Route mutation
+- swaps 2 points on a random route of length at least 2 of a random warehouse
+- accepts if the changed warehouse has better fitness, else returns to previous state
 
-## How to run it
+### Warehouse mutation
+- moves warehouse randomly using Gaussian distribution using predefined 'sigma' variable for both dimensions
+- accepts if change has better fitness, else returns to previous state
 
-### REST API part
+### Point-warehouse mutation
+- moves point from one warehouse to another warehouse
+- accepts if change has better fitness, else returns to previous state
+
+# How to run
+
+## REST API part
 - move to directory 'rest'
 - start REST API
 - after running the GA, interrupt program using Ctrl+C
 
-### Client part
+## Client part
 - move to directory 'csharp-cconsole'
 - start project 'csharp-console' using dotnet (use Release configuration for max performance)
 - this program will write stats about each generation to output
 - [WIP] configuration from file?, hard-coded values for now
 - saves solution for each run to output directory with extention '.wh'
 
-### Visualization part
+## Visualization part
 - move to directory 'rest'
 - run 'visualization.py' with first argument being path to directory containing solutions from Client part
 - this program creates new folder in output folder and saves PDF visualization for each solution
 
-### Requirements
+## Requirements
 - dotnet or runtime that can run C# 8.0+ (tested using dotnet)
 - python 3.9+
 - installed python modules listed in 'required.txt' in 'rest' directory
+
+
 
 ## csharp-console directory
 
@@ -47,7 +63,6 @@
 ### visualization.py
 
 - expects 'prague.osm' file in current directory
-- 
 
 ### download_map.py
 
