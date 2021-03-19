@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -10,7 +11,18 @@ namespace csharp_console
 	public class Warehouse
 	{
 		private static Random rand = new Random();
-		public static Func<PointD, PointD, Task<double>> fitness = Evaluation.MapDistance;//Evaluation.EuklidianDistance;
+		public static Func<PointD, PointD, Task<double>> fitness = async (p1, p2) => {
+			if ( DBService.TryGetFitness(p1, p2, out double value))
+			{
+				return await Task.FromResult(value);
+			}
+			else
+			{
+				var val = await Evaluation.MapDistance(p1, p2);
+				DBService.AddValue(p1, p2, val);
+				return val;
+			}
+			} ;//Evaluation.EuklidianDistance;
 
 		public PointD Point;
 		public readonly int CarsAmount;
