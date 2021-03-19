@@ -25,8 +25,8 @@ namespace csharp_console.Mutations
 			PointD newPoint;
 
 			double x, y;
-			x = RandomExtensions.NextGaussian(rand, oldPoint.X, sigma);
-			y = RandomExtensions.NextGaussian(rand, oldPoint.Y, sigma);
+			x = rand.NextGaussian(oldPoint.X, sigma);
+			y = rand.NextGaussian(oldPoint.Y, sigma);
 			newPoint = new PointD(x, y);
 
 			wh.Point = newPoint;
