@@ -19,16 +19,16 @@
 # How to run
 
 ## REST API part
-- move to directory 'rest'
+- move to directory 'python'
 - start REST API
-- after running the GA, interrupt program using Ctrl+C
+- after running the client part, interrupt program using Ctrl+C
 
 ## Client part
-- move to directory 'csharp-cconsole'
+- move to directory 'csharp-console'
 - start project 'csharp-console' using dotnet (use Release configuration for max performance)
 - this program will write stats about each generation to output
 - [WIP] configuration from file?, hard-coded values for now
-- saves solution for each run to output directory with extention '.wh'
+- saves solution for each run to output directory with extension '.wh'
 
 ## Visualization part
 - move to directory 'rest'
@@ -45,14 +45,14 @@
 ## csharp-console directory
 
 - expects server listening on 'http://localhost:5000'
-- Stores solution of C# client implementation using async for maximum speed
+- Stores solution of C# client implementation using asynchronous programming for maximum speed
 - designed for communicate with 'flask_rest.py' from 'rest' directory (getting distance/time)
 - [WIP] outputs to directory "csharp_results" using full path
 - implements Evolutionary algorithm using Evolutionary Strategies
 
 ## python directory
 
-- Stores scripts for using osmnx module
+- Stores scripts that use osmnx module
 
 - This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
 
