@@ -1,0 +1,6 @@
+osmnx==1.0.0
+matplotlib==3.3.3
+networkx==2.5
+flask==1.1.2
+flask-restful==0.3.8
+overpy==0.4

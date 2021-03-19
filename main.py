@@ -1,279 +1,411 @@
-from random import random, randint, shuffle
-from matplotlib import pyplot as plt
-from geopy.geocoders import Nominatim
-from geopy import distance
+import array
+import random
+from math import sqrt
 from PIL import Image
-import webbrowser
-import math
+from sys import argv
+import multiprocessing
+import time
 import os
+from requests import post
+#from concurrent.futures import ThreadPoolExecutor
+from geopy import distance
+import json
+import requests
+from pprint import pprint
 
-population = 50
-elite_num = 0
-new_random = 30
-mutation_prob = 0.2
-distances = {}
-truck_value = 5
-distance_value = 1
-progress_img_name = "progress.png"
-solutions_img_name = "solutions.gif"
+import numpy as np
+from matplotlib import pyplot as plt
 
-class Chromosome:
-    warehouse = None
-    truck_routes = []
-    _value = None
+from deap import algorithms
+from deap import base
+from deap import creator
+from deap import tools
 
-    def __init__(self, warehousePoint, stopPointsList):
-        self.warehouse = warehousePoint
-        self.truck_routes = stopPointsList
-    
-    def trucks_needed(self):
-        return len(self.truck_routes)
+import functools
 
-    def evaluate(self):
-        if self._value is not None:
-            return self._value
-        else:
-            result = truck_value * len(self.truck_routes)
-            distance = 0
-            for truck_route in self.truck_routes:
-                if len(truck_route) > 0:
-                    distance += GetDistance(self.warehouse, truck_route[0])
-                    for i in range(len(truck_route) - 1 ):
-                        distance += GetDistance(truck_route[i], truck_route[i+1])
-                    distance += GetDistance(truck_route[-1], self.warehouse)
-            result += distance * distance_value
-            self._value = result
-            return result
-        
+# custom lib
+import min_span_tree
 
-def RandomChromosome(min_x, min_y, diff_x, diff_y, points, trucks_amount):
-    resPoint = []
-    for _ in range(trucks_amount):
-        resPoint.append( [] )
-    
-    for point in points:
-        resPoint[randint(0, trucks_amount - 1)].append(point)
-    
-    if [] in resPoint: 
-        return RandomChromosome(min_x, min_y, diff_x, diff_y, points, trucks_amount)
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--seed", default=64, type=int, help="Random seed")
+parser.add_argument("--cores", default=multiprocessing.cpu_count()//2,
+	type=int, help="Core count for multi processing")
+parser.add_argument("--runs", default=5, type=int, help="Amount of runs")
+parser.add_argument("--points_file", default="gps_coords.txt",
+	type=str, help="Name of file containing gps coordinates of points")
 
-    return Chromosome(
-        ( min_x + diff_x*random(),
-         min_y + diff_y*random()),
-         resPoint
-    )
+args = parser.parse_args([] if "__file__" not in globals() else None)
 
-def Generate_Chromosome(solutions):
-    parent1 = ChooseParent(solutions)
-    parent2 = ChooseParent(solutions)
-    child1 = CrossOver(parent1, parent2)
-    if random() <= mutation_prob:
-        return Mutate(child1)
-    return child1
+#random.seed(args.seed)
 
+use_osmnx_fastapi = False
+use_osmnx_flask = True
+use_geopy = False
+
+# check use_ params
+assert int(use_geopy) + int(use_osmnx_flask) + int(use_osmnx_fastapi) <= 1
+
+use_multiproc = True
+
+debug = False
+WH_AMOUNT = 1
+
+# debug
+POINTS_NUM = 15
+POINTS_RANGE = 30
+wh_x, wh_y = 0, 0
+
+points = []
+if debug:
+	for i in range(POINTS_NUM):
+		points.append( (random.randint(0, POINTS_RANGE), random.randint(0, POINTS_RANGE)) )
+else:
+	with open(args.points_file, "r") as gps_file:
+		POINTS_NUM = int(gps_file.readline())
+		for i in range(POINTS_NUM):
+			line = tuple( float(part) for part in gps_file.readline().split(';') )
+			assert len(line) == 2
+			points.append((line[0], line[1]))
+
+# scatter points
+# if "points.png" not in os.listdir():
+# 	plt.scatter( [ p[0] for p in points ], [ p[1] for p in points ])
+# 	plt.savefig("points.png")
+# 	plt.clf()
+# 	print("Created plot for point visualization in 'points.png'")
+
+# # create nodes
+# first_nodes = [ min_span_tree.Node(p[0], p[1], str(p)) for p in points ]
+# # add neighbours
+# for n in first_nodes:
+# 	for n2 in first_nodes:
+# 		if n2 != n:
+# 			n.add_neighbour(n2)
+
+# def Index_node_in_points(node, points):
+# 	for i in range(len(points)):
+# 		if node.X == points[i][0] and node.Y == points[i][1]:
+# 			return i
+# 	return -1
+
+# route = [ Index_node_in_points(node, points) for
+# 		node in min_span_tree.TSP_aproximate(first_nodes) ]
+
+@functools.lru_cache(maxsize=None)
 def GetDistance(point1, point2):
-    if str((point1, point2)) in distances:
-        return distances[str((point1, point2))]
-    elif str((point2, point1)) in distances:
-        return distances[str((point2, point1))]
-    else:
-        dist = distance.distance(point1, point2).km
-        distances[str((point1, point2))] = dist
-        return dist
+	# if use_osmnx_fastapi:
+	# 	resp = requests.get("http://localhost:5000/distance/{}:{};{}:{}".format(
+	# 		point1[0], point1[1],
+	# 		point2[0], point2[1],
+	# 	))
+	# 	dict_obj = resp.json()
+	# 	dist_meters = float(dict_obj['distance'])
+	# 	# return km
+	# 	distance = dist_meters / 1_000.0
+	# 	return distance
+	# elif use_osmnx_flask:
+	# 	resp = requests.get("http://localhost:5000/shortest/{}:{};{}:{}".format(
+	# 		point1[0], point1[1],
+	# 		point2[0], point2[1],
+	# 	))
+	# 	dict_obj = resp.json()
+	# 	dist_meters = float(dict_obj['meters_distance'])
+	# 	# return km
+	# 	distance = dist_meters / 1_000.0
+	# 	return distance
+	# elif use_geopy:
+	if use_geopy:
+		return distance.distance(point1, point2).km
+	else:
+		return sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 )
 
-def ChooseParent(solutions):
-    best_value = solutions[0].evaluate()
-    random_index = randint(0, len(solutions) - 1 )
-    while not best_value * random() <= solutions[random_index].evaluate():
-        random_index = randint(0, len(solutions) - 1 )
-    return solutions[random_index]
+# distance_map = [ [ GetDistance(p1, p2) for p2 in points] for p1 in points]
 
-def CrossOver(parent1, parent2):
-    warehouse_x = parent1.warehouse[0] + random() * (parent1.warehouse[0] - parent2.warehouse[0])
-    warehouse_y = parent1.warehouse[1] + random() * (parent1.warehouse[1] - parent2.warehouse[1])
-    warehouseAvg = ( warehouse_x, warehouse_y )
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+# creator.create("Individual", array.array, typecode='f', fitness=creator.FitnessMin,
+# 				path=None)
+creator.create("Individual", list, fitness=creator.FitnessMin,
+				path=None)
 
-    truck_routes = parent1.truck_routes.copy()
-    indices = []
-    for route in truck_routes:
-        temp = [ x for x in range( len(route) ) ]
-        shuffle(temp)
-        indices.append( sorted( temp[:randint(0, len(route) )] ) )
+toolbox = base.Toolbox()
 
-    resStopPoints = []
-    for i in range(len(indices)):
-        temp_route = []
-        for index in indices[i]:
-            temp_route.append( truck_routes[i][index] )
-        resStopPoints.append( temp_route )
+creator.create("TSP_Individual", list, fitness=creator.FitnessMin)
 
-    for route in parent2.truck_routes:
-        unlisted_points = []
-        for point in route:
-            if not Contains(resStopPoints, point):
-                unlisted_points.append( point )
-        truck_index = randint(1, len(resStopPoints) ) - 1
-        for point in unlisted_points:
-            resStopPoints[truck_index].append( point )
-    if [] in resStopPoints:
-        return CrossOver(parent1, parent2)
-    return Chromosome(warehouseAvg, resStopPoints)
+def shuffle_TSP(route):
+	start_index = random.randint(-len(route) + 1, 0)
+	res = [ route[i] for i in range(start_index,len(route) + start_index) ]
+	print(res)
+	return res
 
-def Contains(truck_routes, point):
-    for route in truck_routes:
-        if point in route:
-            return True
-    return False
+def no_shuffle_TSP(route):
+	return route
 
-def Mutate(solution):
-    trucks_amount = len(solution.truck_routes)
-    truck1 = randint(1, trucks_amount) - 1
-    truck1_point = randint(1, len(solution.truck_routes[truck1])) - 1
+def random_shuffle(points):
+	points2 = points[:]
+	random.shuffle(points2)
+	return points2
 
-    while True:
-        truck2 = randint(1, trucks_amount) - 1
-        truck2_point = randint(1, len(solution.truck_routes[truck2])) - 1
+def custom_pmx(p1, p2):
+	point1 = random.randrange(1, len(p1))
+	point2 = random.randrange(1, len(p1))
+	start = min(point1, point2)
+	end = max(point1, point2)
 
-        if truck1 != truck2 or truck1_point != truck2_point:
-            break
-    solution.truck_routes[truck1][truck1_point], solution.truck_routes[truck2][truck2_point] = solution.truck_routes[truck2][truck2_point], solution.truck_routes[truck1][truck1_point]
-    return solution
+	# swap the middle parts
+	o1mid = p2[start:end]
+	o2mid = p1[start:end]
 
-def GenerateFigurePng(img_names, genNum, solution):
-    best_x_vals = [ x[0] for x in solution.truck_routes[0]]
-    best_y_vals = [ x[1] for x in solution.truck_routes[0]]
-    plt.scatter(best_x_vals, best_y_vals, color="g")
-    plt.scatter( [ solution.warehouse[0] ], [ solution.warehouse[1] ], color="r", marker="x")
-    plt.title("Generation {}: {}".format(genNum, solution.evaluate() ))
-    plt.savefig( "figure_{}.png".format(genNum) )
-    img_names.append("figure_{}.png".format(genNum))
-    plt.clf()
-    
-def CreateGif(img_names):
-    frames = []
-    for img in img_names:
-        frames.append( Image.open(img) )
-    
-    frames[0].save(solutions_img_name, format='GIF',
-    append_images=frames[1:],
-    save_all=True, duration=250, loop=0)
+	o1 = creator.TSP_Individual()
+	o2 = creator.TSP_Individual()
 
-def DeletePNGs(names):
-    for name in names:
-        os.remove(name)
+	for index in range(len(p1)):
+		val1 = p2[index]
+		if start <= index < end:
+			o1.append(o1mid[index - start])
+		else:
+			while val1 in o1mid:
+				val1 = p2[p1.index(val1)]
+			else:
+				o1.append(p2[index])
+		val2 = p1[index]
+		if start <= index < end:
+			o2.append(o2mid[index - start])
+		else:
+			while val2 in o2mid:
+				val2 = p1[p2.index(val2)]
+			else:
+				o2.append(p1[index])
+	#print("TSP children created")
+	return ( o1, o2 )
 
-# first program: Best place to put warehouse if we have fixed amount of trucks (modified TSP)
-def Main():
-    global population, new_random, elite_num
-    img_names = []
+tsp_points = None
 
-    adresses = []
-    coordinates = []
-    try:
-        while True:
-            line = input()
-            if line == "":
-                continue
-            adresses.append(line)
-    except EOFError:
-        pass
-    nom         = Nominatim(user_agent="test_app")
-    print("Getting locations...")
-    geocodes    = [     nom.geocode(x)          for x in adresses ]
-    print("Loaded all locations.")
-    #print( "Geocodes -> " + str(geocodes) )
-    coordinates = [ (x.latitude, x.longitude)   for x in geocodes ]
+def evalTSP(TSPIndividual):
+	#wh_x, wh_y = TSPIndividual[0], TSPIndividual[1]
+	distance = 0
+	if use_osmnx_flask:
+		#data = [ list(point) for point in TSPIndividual ]
+		resp = requests.post("http://localhost:5000/path", json={
+			'points': [ [x[0], x[1]] for x in TSPIndividual ]
+		})
+		json_obj = resp.json()
+		#print(json_obj)
+		distance = json_obj['distance']
+	else:
+		for point1, point2 in zip(TSPIndividual[-1:], TSPIndividual):
+			#print(gene1, gene2)
+			# if gene1 == len(points):
+			# 	point1 = (wh_x, wh_y)
+			# else:
+			# 	point1 = points[gene1]
+			# if gene2 == len(points):
+			# 	point2 = (wh_x, wh_y)
+			# else:
+			# 	point2 = points[gene2]
+			# #print(point1, point2)
+			distance += GetDistance(point1, point2)
+	return distance,
 
-    x_coords    = [ x[0] for x in coordinates ]
-    max_x       = max( x_coords )
-    min_x       = min( x_coords )
-    diff_x      = max_x - min_x
-    y_coords    = [ x[1] for x in coordinates ]
-    max_y       = max( y_coords )
-    min_y       = min( y_coords )
-    diff_y      = max_y - min_y
+def evalFunc(individual, NGEN = 5_000, save_path = False):
+	wh_x, wh_y = individual[0][0], individual[0][1]
+	toolbox = base.Toolbox()
 
-    N = 1_000
+	# Attribute generator
+	toolbox.register("TSP_Points", random_shuffle, points + [(wh_x, wh_y)])
+	#toolbox.register("TSPindices", shuffle_TSP, route)
 
-    solutions = []
-    # init first generation
-    for _ in range(population):
-        solutions.append( RandomChromosome(min_x, min_y, diff_x, diff_y, coordinates, 1 ) )
+	# Structure initializers
+	toolbox.register("TSP_Individual", tools.initIterate, creator.TSP_Individual, toolbox.TSP_Points)
+	toolbox.register("TSPpopulation", tools.initRepeat, list, toolbox.TSP_Individual)
 
-    solutions.sort( key=lambda chromosome: chromosome.evaluate() )
-    next_solutions = []    
-    genNum = 1
-    best_values = [ solutions[0].evaluate() ]
-    avg_values = [ sum( [x.evaluate() for x in solutions] ) / len(solutions) ]
-    worst_values = [ solutions[len(solutions) - 1].evaluate() ]
-    best_value = solutions[0].evaluate()
+	#toolbox.register("mate", tools.cxOrdered)
+	toolbox.register("mate", tools.cxPartialyMatched)
+	#toolbox.register("mate", custom_pmx)
+	toolbox.register("mutate", tools.mutShuffleIndexes, indpb=0.05)
+	toolbox.register("select", tools.selTournament, tournsize=3)
+	toolbox.register("evaluate", evalTSP)
 
-    GenerateFigurePng(img_names, genNum, solutions[0])
+	MU = 10 # amount of individuals to select from each generation (possible parents)
+	LAMBDA = 20 # number of new children for each generation
+	CXPB = 0.25 # probability of mating
+	MUTPB = 0.7 # mutation probability
 
-    print( "Gen {0} -> {1}".format( genNum, best_value ) )
-    while genNum < N :
-        
-        # add elite
-        next_solutions = solutions[:elite_num]
-        # add new random
-        for _ in range(new_random):
-            next_solutions.append( RandomChromosome(min_x, min_y,
-                diff_x, diff_y, coordinates, 1) )
-        # generate from parents
-        for _ in range(population - elite_num - new_random):
-            next_solutions.append( Generate_Chromosome(solutions) )
+	pop = toolbox.TSPpopulation(n=MU)
 
-        # sort solutions
-        solutions += next_solutions
-        solutions.sort( key=lambda chromosome: chromosome.evaluate() )
-        solutions = solutions[:population]
+	hof = tools.HallOfFame(1)
+	#stats = tools.Statistics(lambda ind: ind.fitness.values)
+	#stats.register("max", numpy.max)
+	#stats.register("avg", np.mean)
+	#stats.register("std", numpy.std)
+	#stats.register("min", np.min)
 
-        #solutions = next_solutions
-        next_solutions = []
+	# pop, logbook = algorithms.eaSimple(pop, toolbox, CXPB, MUTPB, NGEN, stats=stats,
+	# 					halloffame=hof, verbose=False)
 
-        #solutions.sort(key= lambda chromosome: chromosome.evaluate())
+	# _, _ = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 					halloffame=hof, verbose=False)
 
-        best_values.append( solutions[0].evaluate() )
-        avg_values.append( sum( [x.evaluate() for x in solutions] ) / len(solutions) )
-        worst_values.append( solutions[len(solutions) - 1].evaluate() )
+	_, _ = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+						halloffame=hof, verbose=True)
 
-        genNum += 1
+	if save_path:
+		individual.path = [ x for x in hof[0] ]
+	value = hof[0].fitness.getValues()[0]
+	#value, = evalTSP(hof[0])
+	return value,
 
+# Attribute generator
+x_attributes = [ x[0] for x in points ] # + [ x[1] for x in points ]
+x_low, x_up = min(x_attributes), max(x_attributes)
+y_attributes = [ x[1] for x in points ]
+y_low, y_up = min(y_attributes), max(y_attributes)
+def create_warehouse(x_low, x_high, y_low, y_high):
+	return ( random.uniform(x_low, x_high), random.uniform(y_low, y_high))
 
-        if best_value > solutions[0].evaluate():
-            best_value = solutions[0].evaluate()
-            print( "Gen {0} -> {1}".format( genNum, best_value ) )
-            GenerateFigurePng(img_names, genNum, solutions[0])
+toolbox.register("point_attr", create_warehouse, x_low=x_low, x_high=x_up,
+				y_low=y_low, y_high=y_up)
+# attributes = [ x[0] for x in points ] + [ x[1] for x in points ]
+# low, up = min(attributes), max(attributes)
+#toolbox.register("point_attr", random.uniform, low, up)
 
+# Structure initializers
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.point_attr, WH_AMOUNT)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-    best_chromosome = solutions[0]
-    print()
-    print("Best solution found:")
-    print("Total needed distance (km): {}".format(best_chromosome.evaluate()) )
-    print("Warehouse geopoint: {}".format(best_chromosome.warehouse) )
-    i = 1
-    for route in best_chromosome.truck_routes:
-        print("Truck {} delivery points:".format(i))
-        for point in route:
-            print(point)
-        i += 1
-    
-    CreateGif(img_names)
+def mateWarehouse(ind1, ind2):
+	# update to new type of warehouse
+	child1 = creator.Individual()
+	child2 = creator.Individual()
+	for i in range(WH_AMOUNT):
+		rand1 = random.random()
+		rand2 = random.random()
+		child1.append( (rand1*ind1[i][0] + (1-rand1)*ind2[i][0], rand2*ind1[i][1] + (1-rand2)*ind2[i][1]) )
+		child2.append( (rand1*ind2[i][0] + (1-rand1)*ind1[i][0], rand2*ind2[i][1] + (1-rand2)*ind1[i][1]) )
+	# child2.append(ind2[0] + (ind1[0] - ind2[0])*random.random())
+	# child2.append(ind2[1] + (ind1[1] - ind2[1])*random.random())
+	return ( child1, child2 )
 
-    DeletePNGs(img_names)
+def mutateWarehouse(individual):
+	rand_step = np.random.normal(size=len(individual)*2)
+	for i in range(len(individual)):
+		rand_step = np.random.normal(size=2)
+		individual[i] = ( individual[i][0] + 0.001 * rand_step[0], individual[i][1] + 0.001 * rand_step[1] )
+	return individual,
 
-    generations = [x for x in range(N)]
-    plt.plot( generations, best_values )
-    plt.plot( generations, avg_values )
-    plt.plot( generations, worst_values )
-    plt.xlabel("Generation")
-    plt.ylabel("Distance needed")
-    plt.legend(["Best", "Average", "Worst"])
-    plt.title( "Best solution: {}".format(best_chromosome.evaluate()) )
-    plt.savefig(progress_img_name)
+toolbox.register("evaluate", evalFunc)
+toolbox.register("mate", mateWarehouse)
+toolbox.register("mutate", mutateWarehouse)
+toolbox.register("select", tools.selRoulette)
+#toolbox.register("select", tools.selTournament, tournsize=3)
 
-    # webbrowser.open(progress_img_name)
-    # webbrowser.open(solutions_img_name)
+def main(pool):
+
+	NGEN = 30 # amount of generations
+	MU = 10 # amount of individuals to select from each generation (possible parents)
+	LAMBDA = 20 # number of new children for each generation
+	CXPB = 0.8 # probability of mating
+	MUTPB = 0.1 # mutation probability
+
+	if pool is not None:
+		toolbox.register("map", pool.map)
+
+	pop = toolbox.population(n=MU)
+	hof = tools.HallOfFame(1)
+	stats = tools.Statistics( lambda ind: ind.fitness.values )
+	stats.register("std", np.std)
+	stats.register("max", np.max)
+	stats.register("avg", np.mean)
+	stats.register("min", np.min)
+
+	pop, log = algorithms.eaSimple(pop, toolbox, cxpb=CXPB, mutpb=MUTPB, ngen=NGEN,
+								   stats=stats, halloffame=hof, verbose=True)
+
+	# pop, log = algorithms.eaMuPlusLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 								stats=stats, halloffame=hof, verbose=True)
+
+	# pop, log = algorithms.eaMuCommaLambda(pop, toolbox, MU, LAMBDA, CXPB, MUTPB, NGEN,
+	# 								stats=stats, halloffame=hof, verbose=True)
+
+	return pop, log, hof
+
+def GenerateProgressFigure(gen_vals, best_vals, avg_vals, run_num):
+	plt.plot(gen_vals, best_vals)
+	plt.plot(gen_vals, avg_vals)
+	#plt.plot(gen_vals, worst_vals)
+	plt.legend(["Best", "Average"])
+	plt.xlabel("Generation")
+	plt.ylabel("Distance")
+	#plt.show()
+	plt.title("Progress")
+	if use_osmnx_flask or use_osmnx_fastapi:
+		plt.savefig("osmnx-progress-{}.png".format(run_num))
+	elif use_geopy:
+		plt.savefig("geo-progress-{}.png".format(run_num))
+	else:
+		plt.savefig("progress-{}.png".format(run_num))
+	plt.clf()
+
+def GenerateBestPath(wh_point, path, run_num):
+	ordered_points = [ points[x] if x < len(points) else wh_point for x in path]
+	distance = sum([ GetDistance(p1, p2) for p1, p2 in [ (ordered_points[i-1], ordered_points[i]) for i in range(len(ordered_points))] ])
+
+	#pairs = zip(ordered_points[-1:], ordered_points[0:])
+	pairs = [ (ordered_points[i-1], ordered_points[i]) for i in range(len(ordered_points)) ]
+	#print("Pairs -> {}".format(pairs))
+	for pair in pairs:
+		plt.plot( [ x[0] for x in pair ], [ x[1] for x in pair ], color="g")
+	plt.scatter( [ x[0] for x in ordered_points if x != wh_point ], [ x[1] for x in ordered_points if x != wh_point ], color="g", marker="o")
+	plt.scatter([wh_point[0]], [wh_point[1]], color="r", marker="o")
+	plt.title("Distance: {}".format(distance))
+	if use_osmnx_flask or use_osmnx_fastapi:
+		plt.savefig("osmnx-solution-{}.png".format(run_num))
+	elif use_geopy:
+		plt.savefig("geo-solution-{}.png".format(run_num))
+	else:
+		plt.savefig("solution-{}.png".format(run_num))
+	plt.clf()
 
 if __name__ == "__main__":
-    Main()
+	args = parser.parse_args([] if "__file__" not in globals() else None)
+
+	pool = None
+	if use_multiproc:
+		print("Running on {} CPU cores.".format(args.cores))
+		pool = multiprocessing.Pool(processes=args.cores)
+	
+	best_value = None
+	best_run = None
+	for i in range(args.runs):
+		print("{}. run in progress...".format(i+1))
+		if use_multiproc:
+			_, logbook, hof = main(pool)
+		else:
+			_, logbook, hof = main(None)
+
+		print("Generating progress figure...")
+		gen_vals   = [ x["gen"] for x in logbook ]
+		best_vals  = [ x["min"] for x in logbook ]
+		avg_vals   = [ x["avg"] for x in logbook ]
+		GenerateProgressFigure(gen_vals, best_vals, avg_vals, i+1)
+
+		best = hof[0]
+		print(best)
+		#wh_x, wh_y = best[0][0], best[0][1]
+		wh_x, wh_y = None, None
+		print("Generating path for the best warehouse placement...")
+		evalFunc(best, NGEN=5_000, save_path=True)
+		print("Done")
+		path = best.path
+		GenerateBestPath(best[0], path, i+1)
+		print("Best position for warehouse: {}".format( best[0] ))
+		value = best.fitness.getValues()[0]
+		print("Best value: {}".format(value))
+		print()
+		if best_value is None or best_value > value:
+			best_value = value
+			best_run = i+1
+
+	print("Best value: {} from {}. run".format(best_value, best_run))
+	if use_multiproc:
+		pool.close()

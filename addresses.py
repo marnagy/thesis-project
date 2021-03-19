@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from os import getcwd
 
 def Main():
-	driverPath = 'C:\\Users\\mnagy\\Python scripts\\Selenium\\chromedriver.exe'
+	driverPath = 'C:\\Users\\mnagy\\chromedriver_win32\\chromedriver.exe'
 	driver = webdriver.Chrome(driverPath)
 	timeoutConst = 10
 	# op = webdriver.ChromeOptions()  ## for using selenium without opening the browser

@@ -1,27 +1,61 @@
-### Project demo
+# The algorithm
 
-1 warehouse 1 truck demo -> https://youtu.be/c6Ys4W7HJ9w
+- To be added
 
-### addresses.py
+## How to run it
 
-Used for getting addresses of random shops in Prague
+### REST API part
+- move to directory 'rest'
+- start REST API
+- after running the GA, interrupt program using Ctrl+C
 
-### chromedriver.exe
+### Client part
+- move to directory 'csharp-cconsole'
+- start project 'csharp-console' using dotnet (use Release configuration for max performance)
+- this program will write stats about each generation to output
+- [WIP] configuration from file?, hard-coded values for now
+- saves solution for each run to output directory with extention '.wh'
 
-Necessary driver for selenium used in addresses.py
+### Visualization part
+- move to directory 'rest'
+- run 'visualization.py' with first argument being path to directory containing solutions from Client part
+- this program creates new folder in output folder and saves PDF visualization for each solution
 
-### main-deap.py
+### Requirements
+- dotnet or runtime that can run C# 8.0+ (tested using dotnet)
+- python 3.9+
+- installed python modules listed in 'required.txt' in 'rest' directory
 
-Main GA algorithm using DEAP module
+## csharp-console directory
 
-### main.py
+- expects server listening on 'http://localhost:5000'
+- Stores solution of C# client implementation using async for maximum speed
+- designed for communicate with 'flask_rest.py' from 'rest' directory (getting distance/time)
+- [WIP] outputs to directory "csharp_results" using full path
+- implements Evolutionary algorithm using Evolutionary Strategies
 
-Main custom program of GA
+## python directory
 
-### tsp.py
+- Stores scripts for using osmnx module
 
-GA using deap library and generating tsp-progress.png and tsp-solution.png images
+- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
 
-## To Do:
+### flask_rest.py
 
-- [x] Implement GA solving TSP
+- expects 'prague.osm' and 'visualization.py' files in current directory
+
+### visualization.py
+
+- expects 'prague.osm' file in current directory
+- 
+
+### download_map.py
+
+- used to download map and save in current directory
+- [WIP] hard-coded to download Prague map
+- saves map to current directory to file 'prague.osm'
+
+### addresses_overpass.py
+
+- get n shops in Prague using: python addresses_overpass.py --amount=n > [output file]
+- for generating test input
