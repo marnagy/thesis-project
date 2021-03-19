@@ -15,6 +15,10 @@
 /rest/*.osm
 /rest/__pycache__
 
+/python/cache
+/python/*.osm
+/python/__pycache__
+
 # Rust
 /tsp/target
 /tsp
