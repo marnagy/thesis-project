@@ -17,7 +17,7 @@ namespace csharp_console
 		public static readonly Random rand = new Random();
 		async static Task Main(string[] args)
 		{
-			const string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\gps_coords.txt";
+			const string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\python\\gps_coords.txt";
 			const string defaultOutDir = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\csharp_results";
 			Func<int,string> outFile = (i) => $"result_{i}.wh";
 			const char defaultLineSeparator = ';';
@@ -129,7 +129,7 @@ namespace csharp_console
 			const double pointWarehouseMutProb = 0.4d;
 			const double routeMutProb = 0.8d;
 
-			const int runsAmount = 5;
+			const int runsAmount = 10;
 
 			// evolutionary algorithm
 			IList<(int, double, double, double)> logs; // = new List<(int, double, double, double)>();
