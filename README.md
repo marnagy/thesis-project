@@ -1,58 +1,61 @@
+# The algorithm
+
+- To be added
+
+## How to run it
+
+### REST API part
+- move to directory 'rest'
+- start REST API
+- after running the GA, interrupt program using Ctrl+C
+
+### Client part
+- move to directory 'csharp-cconsole'
+- start project 'csharp-console' using dotnet (use Release configuration for max performance)
+- this program will write stats about each generation to output
+- [WIP] configuration from file?, hard-coded values for now
+- saves solution for each run to output directory with extention '.wh'
+
+### Visualization part
+- move to directory 'rest'
+- run 'visualization.py' with first argument being path to directory containing solutions from Client part
+- this program creates new folder in output folder and saves PDF visualization for each solution
+
+### Requirements
+- dotnet or runtime that can run C# 8.0+ (tested using dotnet)
+- python 3.9+
+- installed python modules listed in 'required.txt' in 'rest' directory
+
+## csharp-console directory
+
+- expects server listening on 'http://localhost:5000'
+- Stores solution of C# client implementation using async for maximum speed
+- designed for communicate with 'flask_rest.py' from 'rest' directory (getting distance/time)
+- [WIP] outputs to directory "csharp_results" using full path
+- implements Evolutionary algorithm using Evolutionary Strategies
+
+## python directory
+
+- Stores scripts for using osmnx module
+
+- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
+
+### flask_rest.py
+
+- expects 'prague.osm' and 'visualization.py' files in current directory
+
+### visualization.py
+
+- expects 'prague.osm' file in current directory
+- 
+
+### download_map.py
+
+- used to download map and save in current directory
+- [WIP] hard-coded to download Prague map
+- saves map to current directory to file 'prague.osm'
+
 ### addresses_overpass.py
 
 - get n shops in Prague using: python addresses_overpass.py --amount=n > [output file]
-
-### csharp_console
-
-- Stores project of C# client implementation using async for maximum speed
-
-- outputs to directory "csharp-results"
-
-### rest derectory
-
-- Stores scripts for using osmnx module
-- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
-
-### main-deap.py
-
-Main GA algorithm using DEAP module [deprecated]
-
-### main.py
-
-Main custom program of GA [deprecated]
-
-### tsp.py
-
-GA using deap library and generating tsp-progress.png and tsp-solution.png images [deprecated]
-
-
-
-# Main GA
-
-## Goal
-Find the best location for a Warehouse
-
-- individual is array of double representing coordinates of the warehouse
-- uses tournament selection
-- crossover is custom: choose random point for square that has in opposite corners the parents
-- mutation is change one of the coordinates to random coordinate
-- each generation is mixed with the next one and the next generation is N best solutions
-- evaluation of an individual is another GA for 1_000 generations
-
-# Evaluating GA
-## Goal
-Find Hammilton walk, find order of points for the lowest price
-[in this case, price means distance]
-
-- possible improvement of first generation: start with some TSP approximation(explanation: by starting with better candidates, we reduce time needed, thus speeding up the main GA)
-- individual is array of integers where integer is the index of a point in dictionary of points
-- uses tournament selection
-- crossover is TwoPointCrossover
-- mutation is an exchange of 2 points
-- each generation is mixed with the next one and the next generation is N best solutions
-- evaluation is sum of distances from warehouse through points and back to warehouse
-
-## Update 11.10.2020
-### Inside Evaluating GA:
-Instead of starting with random permutation, start with 2-aprox. of TSP(Double-tree alg.)
-According to my testing, it performs better in terms of speed and accuracy
+- for generating test input
