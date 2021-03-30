@@ -9,9 +9,6 @@ namespace csharp_console.Mutations
 {
 	public static class WarehouseMutation
 	{
-		const double updRateValue = 0.2;
-		const double updConst = 1.2;
-
 		private static readonly Random rand = new Random();
 		private static double sigma = 0.005;
 		//private static int succesfulUpdateCounter = 0;

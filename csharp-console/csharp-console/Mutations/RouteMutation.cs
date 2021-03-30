@@ -36,7 +36,7 @@ namespace csharp_console.Mutations
 
 			double newFitness = await wh.ComputeDistanceAndSave();
 			//whc.UpdateFitness();
-			if (newFitness < oldFitness)
+			if (newFitness <= oldFitness)
 			{
 				whc.UpdateFitness();
 				//whc. Fitness = whc.Fitness.Value - oldFitness + newFitness;

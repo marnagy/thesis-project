@@ -29,8 +29,16 @@
 /csharp-console/csharp-console/obj
 
 # C# results
-/client-results
+/client_results
 
 # test files
 /ox_test
-/test_inputs
+/test_[0-9]*
+
+
+# ignore python docs helper files
+/python/docs/_build
+/python/docs/_static
+/python/docs/_templates
+/python/docs/cache
+/python/docs
