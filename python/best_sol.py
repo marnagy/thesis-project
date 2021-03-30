@@ -43,8 +43,12 @@ def main():
         sol_fitness_pairs.append( (sol, fitness) )
     
     sol_fitness_pairs.sort(key=lambda x: x[1])
-    for i in range(args.n):
-        print( os.path.join(dir_path, sol_fitness_pairs[i][0]) )
+    if 0 < args.n < len(sol_fitness_pairs):
+        for i in range(args.n):
+            print( os.path.join(dir_path, sol_fitness_pairs[i][0]) )
+    else:
+        for sol_fitness_pair in sol_fitness_pairs:
+            print( os.path.join(dir_path, sol_fitness_pair[0]) )
 
 if __name__ == "__main__":
     main()
