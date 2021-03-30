@@ -25,13 +25,16 @@ namespace csharp_console.Mutations
 				}
 			}
 
-			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
-			int toWHIndex = rand.Next(nonEmptyWHIndices.Count);
-			while ( fromWHIndex == toWHIndex )
-				toWHIndex = rand.Next(nonEmptyWHIndices.Count);
+			// if (nonEmptyWHIndices.Count < 2)
+			// 	return;
 
+			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
 			var whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
-			var whTo = whc.warehouses[nonEmptyWHIndices[toWHIndex]];
+			var whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
+			while ( whFrom == whTo )
+			{
+				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
+			}
 			//nonEmptyWHIndices.Clear();
 			double fromOldFitness = whFrom.Fitness;
 			double toOldFitness = whTo.Fitness;
@@ -54,7 +57,7 @@ namespace csharp_console.Mutations
 			double fromNewFitness = await whFrom.ComputeDistanceAndSave();
 			double toNewFitness = await whTo.ComputeDistanceAndSave();
 			//whc.UpdateFitness();
-			if (fromNewFitness + toNewFitness < fromOldFitness + toOldFitness)
+			if ( Max(fromNewFitness, toNewFitness) < Max(fromOldFitness, toOldFitness) )
 			{
 				whc.UpdateFitness();
 				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromOldFitness, fromNewFitness);
@@ -74,6 +77,13 @@ namespace csharp_console.Mutations
 				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromNewFitness, toOldFitness);
 				//whc.ChangeWarehouseFitness(index: toWHIndex, toNewFitness, fromOldFitness);
 			}
+		}
+		private static double Max(double d1, double d2)
+		{
+			if (d1 > d2)
+				return d1;
+			else
+				return d2;
 		}
 
 		private static int GetRouteIndexTo(Warehouse whTo)
