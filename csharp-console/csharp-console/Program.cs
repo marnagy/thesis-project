@@ -9,62 +9,64 @@ using System.Drawing;
 using System.Text;
 using System.Linq;
 using System.Security;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace csharp_console
 {
 	public class Program
 	{
 		public static readonly Random rand = new Random();
+		static Func<int, string> logFile = (i) => $"result_{i}.log";
+		static Func<int,string> outFile = (i) => $"result_{i}.wh";
 		async static Task Main(string[] args)
 		{
-			const string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\python\\gps_coords.txt";
-			const string defaultOutDir = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\csharp_results";
-			Func<int,string> outFile = (i) => $"result_{i}.wh";
-			const char defaultLineSeparator = ';';
+			string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\gps_coords.txt";
+			string defaultOutDir = "csharp_results";
+			const string defaultLineSeparator = ";";
 
-			string lineSeparator = defaultLineSeparator.ToString();
+			string lineSeparator = defaultLineSeparator;
 			string source = defaultSource;
+			string OutDir = defaultOutDir;
+			string configFile = "..\\..\\..\\..\\..\\config.json";
+
+			if (args.Length < 3)
+			{
+				Console.WriteLine($"You need to give at least 3 arguments. [source file, output directory, configuration file]");
+				return;
+			}
 
 			if (args.Length >= 1)
 			{
-				if ( int.TryParse( args[0], out int result) )
+				source = args[0];
+				// file check
+				if ( !File.Exists(source) )
 				{
-					if (result >= 1 && result <= 2)
-					{
-						Warehouse.fitness = result == 1
-							? Evaluation.EuklidianDistance
-							: Evaluation.MapDistance;
-					}
-					else
-					{
-						throw new ArgumentException("Mode argument accepts integer values {1,2}");
-					}
+					Console.WriteLine("Source file does not exist");
+					return;
 				}
-				else
-				{
-					throw new ArgumentException("Mode argument accepts integer values {1,2}");
-				}
+				Console.WriteLine($"Set source file to {source}");
 			}
 			if (args.Length >= 2)
 			{
-				source = args[1];
+				OutDir = args[1];
+				Console.WriteLine($"Set output directory file to {OutDir}");
 			}
-			if (args.Length == 3)
+			if (args.Length >= 3)
 			{
-				lineSeparator = args[2];
+				configFile = args[2];
+				// file check
+				if ( !File.Exists(configFile) )
+				{
+					Console.WriteLine("Config file does not exist");
+					return;
+				}
+				Console.WriteLine($"Set config file to {configFile}");
 			}
 
-			// get email address and password
-			//MailAddress emailAddress;
-			//SecureString password;
-			//(emailAddress, password) = GetEmailCredentials();
-
-			// file check
-			if ( !File.Exists(source) )
-			{
-				Console.WriteLine("Source file does not exist.");
-				return;
-			}
+			// if doesn't exist, create directory
+			if (!Directory.Exists(OutDir))
+				Directory.CreateDirectory(OutDir);
 
 			// loading data from file
 			IList<PointD> coords;
@@ -88,115 +90,98 @@ namespace csharp_console
 				Console.WriteLine("No coordinates found.");
 				return;
 			}
-				
 
-			// get corners
-			(double, double) lower_left_tup = (coords[0].X, coords[0].Y),
-				higher_right_tup = (coords[0].X, coords[0].Y);
-			foreach (var coord in coords)
-			{
-				if (coord.X < lower_left_tup.Item1)
-				{
-					lower_left_tup.Item1 = coord.X;
-				}
-				if (coord.X > higher_right_tup.Item1)
-				{
-					higher_right_tup.Item1 = coord.X;
-				}
-
-				if (coord.Y < lower_left_tup.Item2)
-				{
-					lower_left_tup.Item2 = coord.Y;
-				}
-				if (coord.Y > higher_right_tup.Item2)
-				{
-					higher_right_tup.Item2 = coord.Y;
-				}
-			}
-
-			// set them in 
-			PointD lowerLeft = new PointD(lower_left_tup.Item1, lower_left_tup.Item2),
-				higherRight = new PointD(higher_right_tup.Item1, higher_right_tup.Item2);
+			// set corner values
+			PointD lowerLeft = new PointD(
+					coords.Select(x => x.X).Min(),
+					coords.Select(x => x.Y).Min()),
+				higherRight = new PointD(
+					coords.Select(x => x.X).Max(),
+					coords.Select(x => x.Y).Max());
 			
 
-			// Evolutionary algorithm constants
-			int warehouses_amount = 1;
-			int[] cars_amount = new[] {2};
-			const int ngen = 30;
-			const int amount = 8;
-			const double cxProb = 0.2d;
-			const double warehouseMutProb = 0.8d;
-			const double pointWarehouseMutProb = 0.4d;
-			const double routeMutProb = 0.8d;
-
-			const int runsAmount = 10;
+			// load evolutionary algorithm constants
+			var config = LoadConfig(configFile);
+			// Debug.Assert( config.PopulationSize % 5 == 0 );
+			// Debug.Assert( config.NGen % 5 == 0 );
+			CheckConfiguration(config);
 
 			// evolutionary algorithm
 			IList<(int, double, double, double)> logs; // = new List<(int, double, double, double)>();
 			IList<WarehousesChromosome> population;
 			WarehousesChromosome bestSolution;
-			StringBuilder sb;
-			HttpClient client = new HttpClient();
-			client.BaseAddress = new Uri("http://localhost:5000");
 
-			//IList<(IList<WarehousesChromosome>, IList<(int, double, double, double)>)> results =
-			//	new List<(IList<WarehousesChromosome> lastPopulation, IList<(int, double, double, double)>)>(n);
-			for (int i = 0; i < runsAmount; i++)
+			for (int i = 0; i < config.Runs; i++)
 			{
 				//results.Add(
 				(population, logs) = await GeneticAlgorithm(
 						coords,
 						lowerLeft,
 						higherRight,
-						amount,
-						ngen,
-						cxProb,
-						warehouseMutProb,
-						pointWarehouseMutProb,
-						routeMutProb,
-						warehouses_amount,
-						cars_amount,
-						client
+						config.PopulationSize,
+						config.NGen,
+						config.WarehouseMutProb,
+						config.PointWarehouseMutProb,
+						config.RouteMutProb,
+						config.WarehousesAmount,
+						config.CarsAmount,
+						currentRun: i,
+						OutDir
 						);
 
 				bestSolution = population
 					.First( 
 						whch => whch.Fitness == population
-							.Max(whc => whc.Fitness)
+							.Min(whc => whc.Fitness)
 							);
 
-				sb = new StringBuilder();
-				sb.AppendLine(bestSolution.Fitness.ToString());
-				foreach (var warehouse in bestSolution.warehouses)
-				{
+				string whText = bestSolution.ToString();
 
-					sb.AppendLine($"{warehouse.Point.X};{warehouse.Point.Y}");
-					//sb.AppendLine( warehouse.CarRoutes.Select(cr => cr.Count > 0 ? 1 : 0).Sum().ToString() );
-					foreach (var cr in warehouse.CarRoutes)
-					{
-						if (cr.Count == 0) continue;
-
-						for (int j = 0; j < cr.Count; j++)
-						{
-							if (j > 0)
-								sb.Append(';');
-							sb.Append($"{cr[j].X};{cr[j].Y}");
-						}
-						sb.AppendLine();
-					}
-					sb.AppendLine("###");
-				}
-
-				if (!Directory.Exists(defaultOutDir))
-					Directory.CreateDirectory(defaultOutDir);
-				string outFilePath = Path.Combine(defaultOutDir, outFile(i));
-				File.WriteAllText(outFilePath, sb.ToString());
+				string outFilePath = Path.Combine(OutDir, outFile(i));
+				File.WriteAllText(outFilePath, whText);
 
 				Console.WriteLine($"Program created file {outFilePath}\n");
 
 			}
 
 			//SendEmail(emailAddress, password);
+		}
+
+		private static void CheckConfiguration(Config config)
+		{
+			//Console.WriteLine(config.ToString());
+			if ( !(config.RouteMutProb >= 0 && config.RouteMutProb <= 1) )
+			{
+				Console.WriteLine("Illegal RouteMutProb. Needs to be in interval [0,1]. Please check config file.", Console.Error);
+				System.Environment.Exit(0);
+			}
+			else if ( !(config.WarehouseMutProb >= 0 && config.WarehouseMutProb <= 1) )
+			{
+				Console.WriteLine("Illegal WarehouseMutProb. Needs to be in interval [0,1]. Please check config file.", Console.Error);
+				System.Environment.Exit(0);
+			}
+			else if ( !(config.PointWarehouseMutProb >= 0 && config.PointWarehouseMutProb <= 1) )
+			{
+				Console.WriteLine("Illegal PointWarehouseMutProb. Needs to be in interval [0,1]. Please check config file.", Console.Error);
+				System.Environment.Exit(0);
+			}
+			else if ( ! (config.WarehousesAmount == config.CarsAmount.Length) )
+			{
+				Console.WriteLine("WarehousesAmount does NOT match length of CarsAmount. Please check config file.", Console.Error);
+				System.Environment.Exit(0);
+			}
+			else if ( !( config.CarsAmount.Length == config.CarsAmount.Where(c => c > 0).Count() ) )
+			{
+				Console.WriteLine("There is not reason for a warehouse to have less than 1 car. Please check config file.", Console.Error);
+				System.Environment.Exit(0);
+			}
+		}
+
+		private static Config LoadConfig(string configFile)
+		{
+			string text = File.ReadAllText(configFile);
+			var config = JsonConvert.DeserializeObject<Config>(text);
+			return config;
 		}
 
 		private static (MailAddress emailAddress, SecureString password) GetEmailCredentials()
@@ -269,51 +254,64 @@ namespace csharp_console
 			}
 			return result;
 		}
+		
 		static async Task<(IList<WarehousesChromosome> lastPopulation,
 			IList<(int, double, double, double)> logs)> GeneticAlgorithm(
 			IList<PointD> coordsList, PointD lowerLeft, PointD higherRight, int populationAmount, int maxGenerations, 
-			double cxProb, double warehouseMutProb, double pointWarehouseMutProb, double routeMutProb, int warehousesAmount, int[] carsAmount,
-			HttpClient client)
+			double warehouseMutProb, double pointWarehouseMutProb, double routeMutProb, int warehousesAmount, int[] carsAmount,
+			int currentRun, string OutputDirPath)
 		{
 			ISet<PointD> coords = new HashSet<PointD>(coordsList);
 
 			List<(int, double, double, double)> logs = new List<(int, double, double, double)>(maxGenerations);
-			Action<int, IList<WarehousesChromosome>> AddLog = (int gen, IList<WarehousesChromosome> whs) =>
+
+			var dt = DateTime.Now;
+			string logOutPath = Path.Combine(OutputDirPath, logFile(currentRun) );
+			using ( StreamWriter logOutStream = new StreamWriter( File.Create( logOutPath ) ) )
 			{
-				double min = whs[0].Fitness,
-					max = whs[0].Fitness,
-					avg = 0;
-				foreach (var wch in whs)
+				Action<int, IList<WarehousesChromosome>> AddLog = (int gen, IList<WarehousesChromosome> whs) =>
 				{
-					min = wch.Fitness < min ? wch.Fitness : min;
-					max = wch.Fitness > max ? wch.Fitness : max;
-					avg += wch.Fitness;
-				}
-				avg = avg / whs.Count;
+					var values = whs.Select(x => x.Fitness).ToArray();
+					double min = values.Min();
+					double max = values.Max();
+					double average = values.Average();
+					double std = Statistics.StandardDeviation(values);
 
-				Console.WriteLine($"Generation {gen}:\tmin: {Math.Round(min, 3)}\tavg: {Math.Round(avg, 3)}\tmax: {Math.Round(max, 3)}");
-				logs.Add( (gen, min, avg, max) );
-			};
+					Log log = new()
+					{
+						gen = gen,
+						std = std,
+						min = min,
+						avg = average,
+						max = max
+					};
+					logOutStream.WriteLine( JsonConvert.SerializeObject(log) );
 
-			// initialize population
-			//IList<WarehousesChromosome> population = InitPopulation(
-			//	lowerLeft, higherRight, populationAmount,
-			//	warehouses_amount, cars_amount, coords);
-			IList<WarehousesChromosome> lastPopulation;
-			lastPopulation = await RunGA(
-				lowerLeft, higherRight, populationAmount,
-				warehousesAmount, carsAmount, coords,
-				maxGenerations,
-				AddLog,
-				fitness: x => x.ComputeFitness(  ),
-				crossover: (p1, p2) => (p1, p2), cxProb,
-				warehouseMutation: Mutations.WarehouseMutation.NormalMove, warehouseMutProb,
-				pointWarehouseMutation: Mutations.ChangeWarehouseOfPoint.SimpleChange, pointWarehouseMutProb,
-				routeMutation: Mutations.RouteMutation.Swap, routeMutProb,
-				enviromentalCross: EnviromentalCrossover.MuCommaLambda
-				);
+					if (gen % 10 == 0)
+						Console.WriteLine($"Generation {gen}:\tstd: {Math.Round(std, 3)}\tmin: {Math.Round(min, 3)}\tavg: {Math.Round(average, 3)}\tmax: {Math.Round(max, 3)}");
 
-			return (lastPopulation, logs);
+					logs.Add( (gen, min, average, max) );
+				};
+
+				// initialize population
+				//IList<WarehousesChromosome> population = InitPopulation(
+				//	lowerLeft, higherRight, populationAmount,
+				//	warehouses_amount, cars_amount, coords);
+				IList<WarehousesChromosome> lastPopulation;
+
+				lastPopulation = await RunGA(
+					lowerLeft, higherRight, populationAmount,
+					warehousesAmount, carsAmount, coords,
+					maxGenerations,
+					AddLog,
+					fitness: x => x.ComputeFitness(),
+					warehouseMutation: Mutations.WarehouseMutation.NormalMove, warehouseMutProb,
+					pointWarehouseMutation: Mutations.ChangeWarehouseOfPoint.SimpleChange, pointWarehouseMutProb,
+					routeMutation: Mutations.RouteMutation.Swap, routeMutProb
+					);
+
+				return (lastPopulation, logs);
+			}
 		}
 		static async Task<IList<WarehousesChromosome>> RunGA(
 			PointD lowerLeft, PointD higherRight, int populationAmount,
@@ -321,78 +319,60 @@ namespace csharp_console
 			int maxGenerations,
 			Action<int, IList<WarehousesChromosome>> addLog,
 			Func<WarehousesChromosome, Task> fitness,
-			Func<WarehousesChromosome, WarehousesChromosome, (WarehousesChromosome, WarehousesChromosome)> crossover, double cxProb,
 			Func<WarehousesChromosome, Task> warehouseMutation, double warehouseMutProb,
 			Func<WarehousesChromosome, Task> pointWarehouseMutation, double pointWarehouseMutProb,
-			Func<WarehousesChromosome, Task> routeMutation, double routeMutProb,
-			Func<IList<WarehousesChromosome>, IList<WarehousesChromosome>, IList<WarehousesChromosome>> enviromentalCross)
+			Func<WarehousesChromosome, Task> routeMutation, double routeMutProb)
 		{
 			var population = InitPopulation(
 				lowerLeft, higherRight, populationAmount,
 				warehousesAmount, carsAmount, coords);
 
 			ISet<Task> computation = new HashSet<Task>();
+
+			// compute fitness
+			await Compute(population, fitness);
+
 			for (int gen = 0; gen < maxGenerations; gen++)
 			{
-				computation.Clear();
-				// compute fitness if neccessary
-				foreach (var solution in population)
-				{
-					if (solution.Fitness < 0)
-						computation.Add( solution.ComputeFitness() );
-				}
-				await Task.WhenAll(computation);
 
+				//Console.WriteLine("Logging...");
 				addLog(gen, population);
-				//WritePopulation(population);
-
-				//List<(WarehousesChromosome, WarehousesChromosome)> parents = new List<(WarehousesChromosome, WarehousesChromosome)>(populationAmount*2);
-				//for (int i = 0; i < populationAmount; i++)
-				//{
-				//	parents.Add( Selection.Tournament(population) );
-				//}
-
-				//var populationCopy = population.Select(whc => whc.Clone()).ToArray();
 
 				// mutation of position of warehouses
-				computation.Clear();
-				foreach (var solution in population)
-				{
-					if (rand.NextDouble() < warehouseMutProb)
-						computation.Add(warehouseMutation(solution));
-				}
-				await Task.WhenAll(computation);
+				//Console.WriteLine("Warehouse mutation...");
+				await Compute(population, warehouseMutation, warehouseMutProb);
 
 				// mutation of position of warehouses
-				computation.Clear();
-				foreach (var solution in population)
-				{
-					if (rand.NextDouble() < warehouseMutProb)
-						computation.Add(warehouseMutation(solution));
-				}
-				await Task.WhenAll(computation);
+				//Console.WriteLine("Point warehouse mutation...");
+				await Compute(population, pointWarehouseMutation, pointWarehouseMutProb);
 
 				// mutation of routes
-				computation.Clear();
-				foreach (var solution in population)
-				{
-					if (rand.NextDouble() < routeMutProb)
-						computation.Add(routeMutation(solution));
-				}
-				await Task.WhenAll(computation);
-
-				//IList<WarehousesChromosome> nextPopulation = new WarehousesChromosome[population.Count];
-				//for (int i = 0; i < population.Count; i++)
-				//{
-				//	nextPopulation[i] = 
-				//		population[i].Fitness <= populationCopy[i].Fitness
-				//		? population[i]
-				//		: populationCopy[i];
-				//}
-				//population = nextPopulation;
+				//Console.WriteLine("Route mutation...");
+				await Compute(population, routeMutation, routeMutProb);
 			}
 			addLog(maxGenerations, population);
 			return population;
+		}
+		private static async Task Compute(IList<WarehousesChromosome> population, Func<WarehousesChromosome, Task> func)
+		{
+			await Compute(population, func, probability: 1.5);
+		}
+		private static async Task Compute(IList<WarehousesChromosome> population, Func<WarehousesChromosome, Task> func, double probability)
+		{
+			const int stepSize = 2;
+
+			ISet<Task> computations = new HashSet<Task>(capacity: stepSize);
+			for (int i = stepSize; i < population.Count + stepSize; i += stepSize)
+			{
+				computations.Clear();
+				for (int j = 0; j < stepSize; j++)
+				{
+					int index = i - stepSize + j;
+					if ( index < population.Count && rand.NextDouble() < probability )
+						computations.Add( func(population[index]) );
+				}
+				await Task.WhenAll(computations);
+			}			
 		}
 		public static void WritePopulation(IList<WarehousesChromosome> population)
 		{

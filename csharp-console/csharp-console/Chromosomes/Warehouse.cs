@@ -12,7 +12,7 @@ namespace csharp_console
 	{
 		private static Random rand = new Random();
 		public static Func<PointD, PointD, Task<double>> fitness = async (p1, p2) => {
-			if ( DBService.TryGetFitness(p1, p2, out double value))
+			if ( DBService.TryGetFitness(p1, p2, out double value) )
 			{
 				return await Task.FromResult(value);
 			}

@@ -1,19 +1,22 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Data.SQLite;
 
 namespace csharp_console.Services
 {
+	/// <summary>
+	/// Singleton class for more performance on client and to reduce the amount of requests to server.
+	/// </summary>
 	public static class DBService
 	{
 		//static readonly SQLiteConnection db;
-		static readonly Dictionary<(PointD, PointD), double> db;
+		static readonly ConcurrentDictionary<(PointD, PointD), double> db;
 		static DBService()
 		{
-			db = new Dictionary<(PointD, PointD), double>();
+			db = new ConcurrentDictionary<(PointD, PointD), double>();
 		}
 		//private static SQLiteConnection CreateConnection()
 		//{

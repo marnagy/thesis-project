@@ -1,0 +1,12 @@
+﻿{
+  "WarehousesAmount": 5,
+  "CarsAmount": [
+	4, 4, 4, 4, 4
+  ],
+  "NGen": 250,
+  "PopulationSize": 10,
+  "WarehouseMutProb": 0.6,
+  "PointWarehouseMutProb": 0.5,
+  "RouteMutProb": 0.6,
+  "Runs": 10
+}
