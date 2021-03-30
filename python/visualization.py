@@ -9,23 +9,23 @@ import matplotlib.pyplot as plt
 import osmnx as ox
 import networkx as nx
 from typing import List, Dict, Tuple
+from argparse import ArgumentParser, Namespace
 #from collections import List
 
-print("Loading map data...")
-ox.config(use_cache=True)
-graph = ox.graph_from_xml("prague_map.osm")
-print("Adding speeds to edges...")
-graph = ox.add_edge_speeds(graph)
-graph = ox.add_edge_travel_times(graph)
+# print("Loading map data...")
+# ox.config(use_cache=True)
+# graph = ox.graph_from_xml("prague_map.osm")
+# print("Adding speeds to edges...")
+# graph = ox.add_edge_speeds(graph)
+# graph = ox.add_edge_travel_times(graph)
 
-RESULTS_DIR_NAME = "result_photos"
+RESULTS_DIR_NAME = "result_visualization"
 counter = 0
 out_ext = 'pdf'
+graph = None
 
 class Point:
-    '''
-        Stores geographical point.
-    '''
+    """Stores geographical point."""
     lat = 0
     lon = 0
 
@@ -34,11 +34,11 @@ class Point:
         self.lon = lon
     
     def json(self) -> Dict[str, float]:
-        '''Get JSON representing Point
+        """Get JSON representing Point
 
         :return: JSON of Point object
         :rtype: Dict[str, float]
-        '''
+        """
         return {
             'lat': self.lat,
             'lon': self.lon
@@ -58,11 +58,11 @@ class Point:
     #     return Point(point_json['lat'], point_json['lon'])
 
     def __str__(self) -> str:
-        '''Get string representation of Point object.
+        """Get string representation of Point object.
 
         :return: representation of Point
         :rtype: str
-        '''
+        """
         return "Lat: {}, Lon: {}".format(self.lat, self.lon)
 
 class Warehouse:
@@ -158,6 +158,15 @@ def double(number: str) -> float:
 #     :rtype: bool
 #     '''
 #     return len(filename) > 0 and re.match("^result_[0-9]+\.txt$", filename) is not None
+
+def get_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("-m", "--map_path", type=str, help="Path of directory containing solutions (.wh files) .", required=True)
+    parser.add_argument("-f", "--file_path", default="", type=str, help="Path of directory containing solutions (.wh files) .")
+
+    args = parser.parse_args(None)
+
+    return args
 
 def load_warehouses(filename: str) -> List[Warehouse]:
     '''Loads warehouses from given file.
@@ -269,6 +278,8 @@ def save_routes(warehouses: List[Warehouse], filename: str):
         'routes': None,
         'colors': None
     }
+    orig_dir = os.sep.join( filename.split(os.sep)[:-1] )
+    filename = filename.split(os.sep)[-1]
     #wh_points = []
     for wh in warehouses:
         #print("Routes amount: {}".format( len(wh.routes) ))
@@ -291,11 +302,13 @@ def save_routes(warehouses: List[Warehouse], filename: str):
     #print("Amount of routes: {}".format(len(routes_dict['routes'])))
     figure_filename = "{}_map.{}".format(filename.split('.')[0], out_ext)
     print("Creating and saving plot from {} ...".format(filename))
-    res_file_path = os.path.join(RESULTS_DIR_NAME, figure_filename)
+    res_file_path = os.path.join(orig_dir, RESULTS_DIR_NAME, figure_filename)
 
     for wh in warehouses:
         routes_dict['routes'].append( [get_node(wh.point)] )
         routes_dict['colors'].append( wh_color )
+    
+    print("Saving to {}".format(res_file_path))
 
     fig, ax = ox.plot_graph_routes(
         graph,
@@ -316,37 +329,47 @@ def save_routes(warehouses: List[Warehouse], filename: str):
     print("Routes saved to {}".format(res_file_path))
 
 def main():
+    global graph
     '''Main method.
 
-        Expects one argument: Path to directory with solutions.
+        Expects at least one argument: Path to file with solution.
     '''
-    args = sys.argv
-    directory = args[1]
-    # save original directory
-    orig_dir = os.getcwd()
-    if not os.path.isdir(directory):
-        print("Given argument is NOT a directory.")
-        return
-    # move to the directory
-    os.chdir(directory)
-    try:
-        files = os.listdir()
-        if not os.path.exists(RESULTS_DIR_NAME):
-            os.mkdir(RESULTS_DIR_NAME)
-    except:
-        return
+    args = get_args()
+    #print("Args: {}".format(args))
+    map_file_path = args.map_path
 
-    try:
-        args = list(map(lambda x: os.path.join(directory, x), files))
-        for filename in args:
-            if not filename.endswith('.wh'):
-                continue
-            print("Loading from file {}".format(filename))
-            warehouses = load_warehouses(filename)
-            save_routes(warehouses, filename.split(os.sep)[-1])
-            print()
-    finally:
-        os.chdir(orig_dir)
+    if args.file_path == "":
+        lines = sys.stdin.readlines()
+        input_lines = list(map(lambda x: x[:-1], lines))
+        filter_f = lambda x: x.endswith('.wh') and os.path.exists(x)
+        input_lines = list(filter(filter_f, input_lines))
+        if len(input_lines) == 0:
+            raise Exception("Invalid input. It does not contain ")
+        #print("Input_lines: {}".format(input_lines))
+        for wh_file_name in input_lines:
+            # wh_file_name = input_lines[i]
+            # if wh_file_name.endswith('.wh') and os.path.exists(wh_file_name):
+                # out_file_name = args.out_file
+                # out_split = out_file_name.split('.')
+                # out_file_name = "{}_{}.{}".format( '.'.join(out_split[-1]), i, out_split[-1] )
+            os.system("python {} -m {} -f {}".format(__file__, map_file_path, wh_file_name))
+    else:
+        print("Loading map data...")
+        ox.config(use_cache=True)
+        graph = ox.graph_from_xml(map_file_path)
+        print("Adding speeds to edges...")
+        graph = ox.add_edge_speeds(graph)
+        graph = ox.add_edge_travel_times(graph)
+
+        filename = args.file_path
+        #for filename in files:
+        if not (filename.endswith('.wh') and os.path.exists(filename)):
+            print("Illegal file path.")
+            return
+        print("Loading from file {}".format(filename))
+        warehouses = load_warehouses(filename)
+        save_routes(warehouses, filename)
+        print()
 
 if __name__ == "__main__":
     main()
