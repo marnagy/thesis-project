@@ -4,21 +4,23 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using Newtonsoft.Json;
 
 namespace csharp_console
 {
 	public static class Evaluation
 	{
-		private static HttpClient client;
+		public static HttpClient client;
+		const string baseAddress = "http://localhost:5000";
 
 		static Evaluation()
 		{
 			client = new HttpClient();
-			client.BaseAddress = new Uri("http://localhost:5000");
+			client.BaseAddress = new Uri(baseAddress);
 		}
 
-		public static async Task<double> EuklidianDistance(PointD p1, PointD p2)
+		public static double EuklidianDistance(PointD p1, PointD p2)
 		{
 			return Math.Sqrt((p1.X - p2.X)*(p1.X - p2.X) + (p1.Y - p2.Y)*(p1.Y - p2.Y));
 		}
@@ -57,7 +59,21 @@ namespace csharp_console
 
 			var msg = new HttpRequestMessage(HttpMethod.Get, uri);
 
-			var response = await client.SendAsync(msg);
+			bool success = false;
+			HttpResponseMessage response = null;
+			while ( !success )
+			{
+				try
+				{
+					response = await client.SendAsync(msg);
+					success = response.StatusCode == System.Net.HttpStatusCode.OK;
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine("Server refused connection.", Console.Error);
+					throw e;
+				}
+			}
 			string content = await response.Content.ReadAsStringAsync();
 			//try
 			//{
