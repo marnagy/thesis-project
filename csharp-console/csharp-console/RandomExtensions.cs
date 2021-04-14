@@ -19,7 +19,13 @@ namespace csharp_console
         public static double NextGaussian(this Random r, double mu = 0, double sigma = 1)
         {
             var u1 = r.NextDouble();
+            while ( u1 == 0d ){
+                u1 = r.NextDouble();
+            }
             var u2 = r.NextDouble();
+            while ( u2 == 0d ){
+                u2 = r.NextDouble();
+            }
 
             var rand_std_normal = Math.Sqrt(-2.0 * Math.Log(u1)) *
                                 Math.Sin(2.0 * Math.PI * u2);
