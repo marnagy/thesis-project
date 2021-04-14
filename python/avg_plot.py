@@ -63,9 +63,11 @@ def main():
     plt.plot(gens, min_values)
     plt.plot(gens, avg_values)
     plt.plot(gens, max_values)
-    plt.legend(["Min", "Average", "Max"])
+
     plt.xlabel("Generations")
     plt.ylabel("Fitness")
+
+    plt.legend(["Min", "Average", "Max"])
     plt.title("Average progress plot")
     plt.show()
 
