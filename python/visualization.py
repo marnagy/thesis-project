@@ -283,6 +283,8 @@ def save_routes(warehouses: List[Warehouse], filename: str):
     #wh_points = []
     for wh in warehouses:
         #print("Routes amount: {}".format( len(wh.routes) ))
+        if wh.routes is None:
+            continue
         for route in wh.routes:
         # for i in range(len(wh.routes)):
         #     #print("i: {}".format(i))
@@ -301,10 +303,12 @@ def save_routes(warehouses: List[Warehouse], filename: str):
             counter += 1
     #print("Amount of routes: {}".format(len(routes_dict['routes'])))
     figure_filename = "{}_map.{}".format(filename.split('.')[0], out_ext)
-    print("Creating and saving plot from {} ...".format(filename))
+    print("Creating plot from {} ...".format(filename))
     res_file_path = os.path.join(orig_dir, RESULTS_DIR_NAME, figure_filename)
 
     for wh in warehouses:
+        if wh.routes is None:
+            continue
         routes_dict['routes'].append( [get_node(wh.point)] )
         routes_dict['colors'].append( wh_color )
     
@@ -338,6 +342,13 @@ def main():
     #print("Args: {}".format(args))
     map_file_path = args.map_path
 
+    print("Loading map data...")
+    ox.config(use_cache=True)
+    graph = ox.graph_from_xml(map_file_path)
+    print("Adding speeds to edges...")
+    graph = ox.add_edge_speeds(graph)
+    graph = ox.add_edge_travel_times(graph)
+
     if args.file_path == "":
         lines = sys.stdin.readlines()
         input_lines = list(map(lambda x: x[:-1], lines))
@@ -352,24 +363,30 @@ def main():
                 # out_file_name = args.out_file
                 # out_split = out_file_name.split('.')
                 # out_file_name = "{}_{}.{}".format( '.'.join(out_split[-1]), i, out_split[-1] )
-            os.system("python {} -m {} -f {}".format(__file__, map_file_path, wh_file_name))
+            try:
+                print("Loading from file {}".format(wh_file_name))
+                warehouses = load_warehouses(wh_file_name)
+                save_routes(warehouses, wh_file_name)
+                print()
+            except nx.NetworkXNoPath:
+                print("Illegal solution: No path to node found.")
+            finally:
+                print()
+            #os.system("python {} -m {} -f {}".format(__file__, map_file_path, wh_file_name))
     else:
-        print("Loading map data...")
-        ox.config(use_cache=True)
-        graph = ox.graph_from_xml(map_file_path)
-        print("Adding speeds to edges...")
-        graph = ox.add_edge_speeds(graph)
-        graph = ox.add_edge_travel_times(graph)
-
-        filename = args.file_path
-        #for filename in files:
-        if not (filename.endswith('.wh') and os.path.exists(filename)):
-            print("Illegal file path.")
-            return
-        print("Loading from file {}".format(filename))
-        warehouses = load_warehouses(filename)
-        save_routes(warehouses, filename)
-        print()
+        try:
+            filename = args.file_path
+            #for filename in files:
+            if not (filename.endswith('.wh') and os.path.exists(filename)):
+                print("Illegal file path.")
+                return
+            print("Loading from file {}".format(filename))
+            warehouses = load_warehouses(filename)
+            save_routes(warehouses, filename)
+        except nx.NetworkXNoPath:
+            print("Illegal solution: No path to node found.")
+        finally:
+            print()
 
 if __name__ == "__main__":
     main()

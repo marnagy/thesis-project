@@ -11,12 +11,20 @@ from math import sqrt
 import osmnx as ox
 import os
 import sys
+from argparse import ArgumentParser, Namespace
 
 # custom datatypes
 from visualization import Point, Warehouse
 
 
 #print("Adding API paths...")
+
+def get_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("-m", "--map_path", type=str, help="Path of map file (OSM file) .", required=True)
+
+    args = parser.parse_args(None)
+    return args
 
 class HelloWorld(Resource):
     """Hello world docstring"""
@@ -102,14 +110,19 @@ class Distance(Resource):
         '''
         start_node = get_node( Point(start_lat, start_lon) )
         dest_node = get_node( Point(dest_lat, dest_lon) )
-        node_path = ox.shortest_path(graph, start_node, dest_node,
-            weight='length')
-        distances = ox.utils_graph.get_route_edge_attributes(graph, node_path,
-            attribute='length')
-        distance = sum(distances)        
-        return {
-            'meters_distance': distance
-        }
+        try:
+            node_path = ox.shortest_path(graph, start_node, dest_node,
+                weight='length')
+            distances = ox.utils_graph.get_route_edge_attributes(graph, node_path,
+                attribute='length')
+            distance = sum(distances)        
+            return {
+                'meters_distance': distance
+            }
+        except:
+            return {
+                'meters_distance': 10_000
+            }
 
 class TravelTime(Resource):
     '''
@@ -147,8 +160,8 @@ class TravelTime(Resource):
             }
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    map_filename = args[0]
+    args = get_args()
+    map_filename = args.map_path
 
     print("Loading map data...")
     ox.config(use_cache=True)
@@ -168,5 +181,6 @@ if __name__ == '__main__':
     #api.add_resource(Path, '/path')
     #api.add_resource(FinalGraph, '/graph')
 
+    #app.run(host='0.0.0.0', port=5_000, debug=True)
     app.run(host='0.0.0.0', port=5_000, debug=True, threaded=True)
     #app.run(port=5_000, debug=True)
