@@ -8,12 +8,17 @@ namespace csharp_console.Mutations
 {
 	class ChangeWarehouseOfPoint
 	{
-		private static readonly Random rand = new Random();
+		private static Random rand = new Random();
+		public static void SetSeed(int seed)
+		{
+			rand = new Random(seed);
+		}
 		public async static Task SimpleChange(WarehousesChromosome whc)
 		{
 			if (whc.warehouses.Length == 1) return;
 
-			double oldFitness = whc.Fitness;
+			double oldTimeFitness = whc.TimeFitness;
+			double oldDistanceFitness = whc.DistanceFitness;
 
 			List<int> nonEmptyWHIndices = new List<int>();
 			for (int i = 0; i < whc.warehouses.Length; i++)
@@ -36,8 +41,11 @@ namespace csharp_console.Mutations
 				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
 			}
 			//nonEmptyWHIndices.Clear();
-			double fromOldFitness = whFrom.Fitness;
-			double toOldFitness = whTo.Fitness;
+
+			double fromOldTimeFitness = whFrom.TimeFitness;
+			double fromOldDistanceFitness = whFrom.DistanceFitness;
+			double toOldTimeFitness = whTo.TimeFitness;
+			double toOldDistanceFitness = whTo.DistanceFitness;
 
 			double whFromOldFitness = whFrom.Fitness;
 			double whToOldFitness = whTo.Fitness;
@@ -54,10 +62,17 @@ namespace csharp_console.Mutations
 				whTo.CarRoutes[routeIndexTo].Insert(pointIndexTo, point);
 			}
 
-			double fromNewFitness = await whFrom.ComputeDistanceAndSave();
-			double toNewFitness = await whTo.ComputeDistanceAndSave();
+			double fromNewTimeFitness = await whFrom.ComputeDistanceAndSave(Mode.Time);
+			double toNewTimeFitness = await whTo.ComputeDistanceAndSave(Mode.Time);
+			double fromNewDistanceFitness = fromOldDistanceFitness;
+			double toNewDistanceFitness = toOldDistanceFitness;
+			if (WarehousesChromosome.Mode == Mode.Distance){
+				fromNewDistanceFitness = await whFrom.ComputeDistanceAndSave(Mode.Distance);
+				toNewDistanceFitness = await whTo.ComputeDistanceAndSave(Mode.Distance);
+			}
 			//whc.UpdateFitness();
-			if ( Max(fromNewFitness, toNewFitness) < Max(fromOldFitness, toOldFitness) )
+			if ( WarehousesChromosome.Mode == Mode.Time && Max(fromNewTimeFitness, toNewTimeFitness) < Max(fromOldTimeFitness, toOldTimeFitness) ||
+				WarehousesChromosome.Mode == Mode.Distance && fromNewDistanceFitness + toNewDistanceFitness < fromOldDistanceFitness + toOldDistanceFitness )
 			{
 				whc.UpdateFitness();
 				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromOldFitness, fromNewFitness);
@@ -71,8 +86,13 @@ namespace csharp_console.Mutations
 				whTo.CarRoutes[routeIndexTo].RemoveAt(pointIndexTo);
 				whFrom.CarRoutes[routeIndexFrom].Insert(pointIndexFrom, point);
 
-				whTo.Fitness = toOldFitness;
-				whFrom.Fitness = fromOldFitness;
+				whTo.ReturnFitness(toOldTimeFitness, Mode.Time);
+				whTo.ReturnFitness(toOldDistanceFitness, Mode.Distance);
+				whFrom.ReturnFitness(fromOldTimeFitness, Mode.Time);
+				whFrom.ReturnFitness(fromOldDistanceFitness, Mode.Distance);
+				
+				//whTo.Fitness = toOldFitness;
+				//whFrom.Fitness = fromOldFitness;
 
 				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromNewFitness, toOldFitness);
 				//whc.ChangeWarehouseFitness(index: toWHIndex, toNewFitness, fromOldFitness);

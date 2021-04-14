@@ -9,11 +9,16 @@ namespace csharp_console.Mutations
 {
 	public static class RouteMutation
 	{
-		private static readonly Random rand = new Random();
+		private static Random rand = new Random();
+		public static void SetSeed(int seed)
+		{
+			rand = new Random(seed);
+		}
 		public async static Task Swap(WarehousesChromosome whc)
 		{
 			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
-			double oldFitness = wh.Fitness;
+			double oldTimeFitness = wh.TimeFitness;
+			double oldDistanceFitness = wh.DistanceFitness;
 			List<PointD> route = wh.CarRoutes[ rand.Next(wh.CarsAmount) ];
 			int length = route.Count;
 			if (length < 2)
@@ -34,9 +39,13 @@ namespace csharp_console.Mutations
 			route[index1] = route[index2];
 			route[index2] = temp;
 
-			double newFitness = await wh.ComputeDistanceAndSave();
+			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
+			double newDistanceFitness = oldDistanceFitness;
+			if (WarehousesChromosome.Mode == Mode.Distance)
+				newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
 			//whc.UpdateFitness();
-			if (newFitness <= oldFitness)
+			if ( WarehousesChromosome.Mode == Mode.Time && newTimeFitness <= oldTimeFitness ||
+				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
 			{
 				whc.UpdateFitness();
 				//whc. Fitness = whc.Fitness.Value - oldFitness + newFitness;
@@ -48,7 +57,8 @@ namespace csharp_console.Mutations
 				temp = route[index1];
 				route[index1] = route[index2];
 				route[index2] = temp;
-				wh.Fitness = oldFitness;
+				wh.ReturnFitness(oldTimeFitness, Mode.Time);
+				wh.ReturnFitness(oldDistanceFitness, Mode.Distance);
 			}
 
 

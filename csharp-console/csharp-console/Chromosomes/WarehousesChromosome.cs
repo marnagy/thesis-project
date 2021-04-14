@@ -10,13 +10,20 @@ namespace csharp_console
 	public class WarehousesChromosome : IComparable<WarehousesChromosome>
 	{
 		// static variables
-		private static readonly Random rand;
+		private static Random rand;
 		private static readonly HttpClient Client;
+
+		public static Mode Mode;
 		static WarehousesChromosome()
 		{
 			rand = new Random();
 			Client = new HttpClient();
 			Client.BaseAddress = new Uri("http://localhost:5000");
+		}
+
+		public static void SetSeed(int seed)
+		{
+			rand = new Random(seed);
 		}
 
 		// instance variables
@@ -41,14 +48,17 @@ namespace csharp_console
 				warehouses[i] = Warehouse.Random(lower_left, higher_right, cars_amounts[i]);
 			}
 		}
-		public double Fitness { get; set; } = -1;
+		public double Fitness { get => WarehousesChromosome.Mode == Mode.Time ? TimeFitness : DistanceFitness; }
+		public double TimeFitness { get; set; }
+		public double DistanceFitness { get; set; }
 
 		public int Length { get; set; }
 
 		public WarehousesChromosome Clone()
 		{
 			var whc = new WarehousesChromosome(warehouses.Select(wh => wh.Clone()).ToArray());
-			whc.Fitness = this.Fitness;
+			whc.TimeFitness = this.TimeFitness;
+			whc.DistanceFitness = this.DistanceFitness;
 			return whc;
 		}
 
@@ -119,7 +129,9 @@ namespace csharp_console
 			List<Task<double>> warehouseTasks = new List<Task<double>>();
 			foreach (var warehouse in warehouses)
 			{
-				warehouseTasks.Add( warehouse.ComputeDistanceAndSave() );
+				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(WarehousesChromosome.Mode) );
+				if (WarehousesChromosome.Mode == Mode.Distance)
+					warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Time) );
 			}
 			//double[] values = 
 			await Task.WhenAll( warehouseTasks );
@@ -128,8 +140,17 @@ namespace csharp_console
 		}
 		internal void UpdateFitness()
 		{
-			double[] values = warehouses.Select(wh => wh.Fitness).ToArray();
-			Fitness = values.Max();
+			// Time part
+			{
+				var values = warehouses.Select(wh => wh.TimeFitness);
+				TimeFitness = values.Max();
+			}
+
+			// Distance part
+			{
+				var values = warehouses.Select(wh => wh.DistanceFitness);
+				DistanceFitness = values.Sum();
+			}
 		}
         //async internal Task ComputeFitness()
         //{
