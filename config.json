@@ -1,12 +1,13 @@
 ﻿{
-  "WarehousesAmount": 5,
+  "WarehousesAmount": 2,
   "CarsAmount": [
-	4, 4, 4, 4, 4
+	  2,2
   ],
-  "NGen": 250,
+  "NGen": 50,
   "PopulationSize": 10,
   "WarehouseMutProb": 0.6,
   "PointWarehouseMutProb": 0.5,
   "RouteMutProb": 0.6,
-  "Runs": 10
+  "Runs": 10,
+  "MaxParallelRequests": 15
 }
