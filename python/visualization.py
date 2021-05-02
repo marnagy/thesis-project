@@ -344,10 +344,11 @@ def main():
 
     print("Loading map data...")
     ox.config(use_cache=True)
-    graph = ox.graph_from_xml(map_file_path)
-    print("Adding speeds to edges...")
+    graph = ox.load_graphml(map_file_path)
+    print("Adding speed data to roads...")
     graph = ox.add_edge_speeds(graph)
     graph = ox.add_edge_travel_times(graph)
+    print()
 
     if args.file_path == "":
         lines = sys.stdin.readlines()
@@ -367,7 +368,6 @@ def main():
                 print("Loading from file {}".format(wh_file_name))
                 warehouses = load_warehouses(wh_file_name)
                 save_routes(warehouses, wh_file_name)
-                print()
             except nx.NetworkXNoPath:
                 print("Illegal solution: No path to node found.")
             finally:
