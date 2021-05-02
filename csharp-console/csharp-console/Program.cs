@@ -12,6 +12,7 @@ using System.Security;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Threading;
+using csharp_console.Services;
 
 namespace csharp_console
 {
@@ -19,7 +20,8 @@ namespace csharp_console
 	{
 		public static Random rand = new Random();
 		static Func<int, string> logFile = (i) => $"result_{i}.log";
-		static Func<int, string> csvFile = (i) => $"result_{i}.csv";
+		static Func<int, string> csvTimeFile = (i) => $"result_{i}_time.csv";
+		static Func<int, string> csvDistanceFile = (i) => $"result_{i}_distance.csv";
 		static Func<int,string> outFile = (i) => $"result_{i}.wh";
 		//static int stepSize = 5;
 		public static void Main(string[] args)
@@ -78,14 +80,7 @@ namespace csharp_console
 				// set seed
 				if ( args.Length >= 4 && int.TryParse(args[3], out int seed))
 				{
-					rand = new Random(seed);
-					// warehouses
-					Warehouse.SetSeed(seed);
-					WarehousesChromosome.SetSeed(seed);
-					//mutations
-					Mutations.RouteMutation.SetSeed(seed);
-					Mutations.ChangeWarehouseOfPoint.SetSeed(seed);
-					Mutations.WarehouseMutation.SetSeed(seed);
+					RandomService.SetSeed(seed);
 				}
 				else
 				{
@@ -151,6 +146,7 @@ namespace csharp_console
 			CheckConfiguration(config);
 			Evaluation.StartManaging(locks: config.MaxParallelRequests);
 			ThreadPool.SetMaxThreads(config.MaxParallelRequests, config.MaxParallelRequests);
+			Evaluation.baseAddress = $"http://{config.ServerHost}:{config.ServerPort}";
 
 			// evolutionary algorithm
 			IList<WarehousesChromosome> population;
@@ -221,26 +217,26 @@ namespace csharp_console
 				System.Environment.Exit(0);
 			}
 		}
-		private static void SendEmail(MailAddress address, SecureString password)
-		{
-			var smtp = new SmtpClient
-			{
-				Host = "smtp.gmail.com",
-				Port = 587,
-				EnableSsl = true,
-				DeliveryMethod = SmtpDeliveryMethod.Network,
-				UseDefaultCredentials = false,
-				Credentials = new NetworkCredential(address.Address, password)
-			};
-			using (var message = new MailMessage(address, address)
-			{
-				Subject = "Program ended",
-				Body = $"Your program has ended at {DateTime.Now}."
-			})
-			{
-				smtp.Send(message);
-			}
-		}
+		// private static void SendEmail(MailAddress address, SecureString password)
+		// {
+		// 	var smtp = new SmtpClient
+		// 	{
+		// 		Host = "smtp.gmail.com",
+		// 		Port = 587,
+		// 		EnableSsl = true,
+		// 		DeliveryMethod = SmtpDeliveryMethod.Network,
+		// 		UseDefaultCredentials = false,
+		// 		Credentials = new NetworkCredential(address.Address, password)
+		// 	};
+		// 	using (var message = new MailMessage(address, address)
+		// 	{
+		// 		Subject = "Program ended",
+		// 		Body = $"Your program has ended at {DateTime.Now}."
+		// 	})
+		// 	{
+		// 		smtp.Send(message);
+		// 	}
+		// }
 
 		static IList<WarehousesChromosome> InitPopulation(PointD lower_left, PointD higher_right, int amount, int warehouses_amount, int[] cars_amount, ISet<PointD> coords)
 		{
@@ -261,33 +257,18 @@ namespace csharp_console
 		{
 			ISet<PointD> coords = new HashSet<PointD>(coordsList);
 
-			var dt = DateTime.Now;
-			string logOutPath = Path.Combine(OutputDirPath, logFile(currentRun) );
-			string csvOutPath = Path.Combine(OutputDirPath, csvFile(currentRun) );
-			using ( StreamWriter csvOutStream = new StreamWriter( File.Create( csvOutPath ) ) )
+			string csvTimePath = Path.Combine(OutputDirPath, csvTimeFile(currentRun) );
+			string csvDistancePath = Path.Combine(OutputDirPath, csvDistanceFile(currentRun) );
+
+			using ( StreamWriter csvTimeStream = new StreamWriter( File.Create( csvTimePath ) ),
+								 csvDistanceStream = new StreamWriter( File.Create( csvDistancePath ) ))
 			{
-				csvOutStream.WriteLine("gen;std;min;avg;max");
+				csvTimeStream.WriteLine("gen;std;min;avg;max");
+				csvDistanceStream.WriteLine("gen;std;min;avg;max");
 				Action<int, IList<WarehousesChromosome>> AddLog = (int gen, IList<WarehousesChromosome> whs) =>
 				{
-					var timeValues = whs.Select(x => x.TimeFitness).ToArray();
-					var values = whs.Select(x => x.Fitness).ToArray();
-					double min = values.Min();
-					double max = values.Max();
-					double average = values.Average();
-					double std = Statistics.StandardDeviation(values);
-
-					Log log = new()
-					{
-						gen = gen,
-						std = std,
-						min = min,
-						avg = average,
-						max = max
-					};
-					csvOutStream.WriteLine($"{gen};{Statistics.StandardDeviation(timeValues):0.000};{timeValues.Min():0.00};{ timeValues.Average():0.00};{timeValues.Max():0.00}");
-
-					if (gen % 5 == 0)
-						Console.WriteLine($"Generation {gen}:\tstd: {Math.Round(std, 3)}\tmin: {Math.Round(min, 3)}\tavg: {Math.Round(average, 3)}\tmax: {Math.Round(max, 3)}");
+					Log(csvTimeStream, gen, whs, Mode.Time);
+					Log(csvDistanceStream, gen, whs, Mode.Distance);
 				};
 
 				IList<WarehousesChromosome> lastPopulation = RunGA(
@@ -303,6 +284,40 @@ namespace csharp_console
 
 				return lastPopulation;
 			}
+		}
+		private static void Log(StreamWriter writer, int gen, IList<WarehousesChromosome> population, Mode mode)
+		{
+			double[] values;
+			switch (mode)
+			{
+				case Mode.Time:
+					values = population.Select(x => x.TimeFitness).ToArray();
+					break;
+				case Mode.Distance:
+					values = population.Select(x => x.DistanceFitness).ToArray();
+					break;
+				default:
+					throw new Exception($"Unknown mode: {mode} found.");
+			}
+
+			// write to file
+			double min = values.Min();
+			double max = values.Max();
+			double average = values.Average();
+			double std = Statistics.StandardDeviation(values);
+
+			Log log = new()
+			{
+				gen = gen,
+				std = std,
+				min = min,
+				avg = average,
+				max = max
+			};
+			writer.WriteLine(log);
+
+			if (gen % 5 == 0)
+						Console.WriteLine($"{mode}:\tgen: {gen}:\tstd: {Math.Round(std, 2)}\tmin: {Math.Round(min, 2)}\tavg: {Math.Round(average, 2)}\tmax: {Math.Round(max, 2)}");
 		}
 		static IList<WarehousesChromosome> RunGA(
 			PointD lowerLeft, PointD higherRight, int populationAmount,
