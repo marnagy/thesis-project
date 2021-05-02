@@ -19,6 +19,8 @@ namespace csharp_console
 		public double RouteMutProb { get; set; }
 		public int Runs { get; set; }
 		public int MaxParallelRequests { get; set; }
+		public string ServerHost { get; set; }
+		public int ServerPort { get; set; }
 		public static Config FromJson(string configFile)
 		{
 			string text = File.ReadAllText(configFile);
