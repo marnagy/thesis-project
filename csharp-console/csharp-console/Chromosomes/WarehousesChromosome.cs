@@ -4,27 +4,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using csharp_console.Services;
 
 namespace csharp_console
 {
 	public class WarehousesChromosome : IComparable<WarehousesChromosome>
 	{
-		// static variables
-		private static Random rand;
-		private static readonly HttpClient Client;
-
 		public static Mode Mode;
-		static WarehousesChromosome()
-		{
-			rand = new Random();
-			Client = new HttpClient();
-			Client.BaseAddress = new Uri("http://localhost:5000");
-		}
-
-		public static void SetSeed(int seed)
-		{
-			rand = new Random(seed);
-		}
 
 		// instance variables
 		public readonly Warehouse[] warehouses;
@@ -54,13 +40,13 @@ namespace csharp_console
 
 		public int Length { get; set; }
 
-		public WarehousesChromosome Clone()
-		{
-			var whc = new WarehousesChromosome(warehouses.Select(wh => wh.Clone()).ToArray());
-			whc.TimeFitness = this.TimeFitness;
-			whc.DistanceFitness = this.DistanceFitness;
-			return whc;
-		}
+		// public WarehousesChromosome Clone()
+		// {
+		// 	var whc = new WarehousesChromosome(warehouses.Select(wh => wh.Clone()).ToArray());
+		// 	whc.TimeFitness = this.TimeFitness;
+		// 	whc.DistanceFitness = this.DistanceFitness;
+		// 	return whc;
+		// }
 
 		public int CompareTo(WarehousesChromosome other)
 		{
@@ -87,6 +73,7 @@ namespace csharp_console
 
 		internal void InitRandomly(ISet<PointD> coords)
 		{
+			var rand = RandomService.GetInstance();
 			foreach (var coord in coords)
 			{
 				var rand_value = rand.NextDouble();
@@ -129,9 +116,8 @@ namespace csharp_console
 			List<Task<double>> warehouseTasks = new List<Task<double>>();
 			foreach (var warehouse in warehouses)
 			{
-				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(WarehousesChromosome.Mode) );
-				if (WarehousesChromosome.Mode == Mode.Distance)
-					warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Time) );
+				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Time) );
+				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Distance) );
 			}
 			//double[] values = 
 			await Task.WhenAll( warehouseTasks );
