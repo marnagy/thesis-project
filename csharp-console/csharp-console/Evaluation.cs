@@ -16,7 +16,7 @@ namespace csharp_console
 		// public EventWaitHandle eventWaithandle = new ManualResetEvent(false);
 		// public double result;
 		public static readonly HttpClient client;
-		const string baseAddress = "http://localhost:5000";
+		public static string baseAddress { get; set; } = "http://localhost:5000";
 
 		// optimalization if server cannot respond to all wanted requests
 		//private static readonly ConcurrentQueue<(PointD, PointD, string)> msgs = new ConcurrentQueue<(PointD, PointD, string)>();
