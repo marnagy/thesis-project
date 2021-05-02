@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,13 +9,10 @@ namespace csharp_console.Mutations
 {
 	class ChangeWarehouseOfPoint
 	{
-		private static Random rand = new Random();
-		public static void SetSeed(int seed)
-		{
-			rand = new Random(seed);
-		}
+		private static Random rand;
 		public async static Task SimpleChange(WarehousesChromosome whc)
 		{
+			rand = RandomService.GetInstance();
 			if (whc.warehouses.Length == 1) return;
 
 			double oldTimeFitness = whc.TimeFitness;
@@ -66,10 +64,10 @@ namespace csharp_console.Mutations
 			double toNewTimeFitness = await whTo.ComputeDistanceAndSave(Mode.Time);
 			double fromNewDistanceFitness = fromOldDistanceFitness;
 			double toNewDistanceFitness = toOldDistanceFitness;
-			if (WarehousesChromosome.Mode == Mode.Distance){
+			//if (WarehousesChromosome.Mode == Mode.Distance){
 				fromNewDistanceFitness = await whFrom.ComputeDistanceAndSave(Mode.Distance);
 				toNewDistanceFitness = await whTo.ComputeDistanceAndSave(Mode.Distance);
-			}
+			//}
 			//whc.UpdateFitness();
 			if ( WarehousesChromosome.Mode == Mode.Time && Max(fromNewTimeFitness, toNewTimeFitness) < Max(fromOldTimeFitness, toOldTimeFitness) ||
 				WarehousesChromosome.Mode == Mode.Distance && fromNewDistanceFitness + toNewDistanceFitness < fromOldDistanceFitness + toOldDistanceFitness )
