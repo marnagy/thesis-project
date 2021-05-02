@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -9,14 +10,10 @@ namespace csharp_console.Mutations
 {
 	public static class WarehouseMutation
 	{
-		private static Random rand = new Random();
 		private static double sigma = 0.005;
-		public static void SetSeed(int seed)
-		{
-			rand = new Random(seed);
-		}
 		public async static Task NormalMove(WarehousesChromosome whc)
 		{
+			var rand = RandomService.GetInstance();
 			int whIndex = rand.Next(whc.warehouses.Length);
 			Warehouse wh = whc.warehouses[whIndex];
 			double oldTimeFitness = wh.TimeFitness;
@@ -39,8 +36,8 @@ namespace csharp_console.Mutations
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
 			double newDistanceFitness = oldDistanceFitness;
-			if (WarehousesChromosome.Mode == Mode.Distance)
-				newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
+			//if (WarehousesChromosome.Mode == Mode.Distance)
+			newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
 			//whc.UpdateFitness();
 			if ( WarehousesChromosome.Mode == Mode.Time    && newTimeFitness <= oldTimeFitness ||
 				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )

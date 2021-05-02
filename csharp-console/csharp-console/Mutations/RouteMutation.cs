@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -9,13 +10,9 @@ namespace csharp_console.Mutations
 {
 	public static class RouteMutation
 	{
-		private static Random rand = new Random();
-		public static void SetSeed(int seed)
-		{
-			rand = new Random(seed);
-		}
 		public async static Task Swap(WarehousesChromosome whc)
 		{
+			var rand = RandomService.GetInstance();
 			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
 			double oldTimeFitness = wh.TimeFitness;
 			double oldDistanceFitness = wh.DistanceFitness;
@@ -41,8 +38,8 @@ namespace csharp_console.Mutations
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
 			double newDistanceFitness = oldDistanceFitness;
-			if (WarehousesChromosome.Mode == Mode.Distance)
-				newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
+			//if (WarehousesChromosome.Mode == Mode.Distance)
+			newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
 			//whc.UpdateFitness();
 			if ( WarehousesChromosome.Mode == Mode.Time && newTimeFitness <= oldTimeFitness ||
 				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
