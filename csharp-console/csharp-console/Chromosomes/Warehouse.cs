@@ -95,7 +95,12 @@ namespace csharp_console
 			IList<Task<double>> computation = new List<Task<double>>(CarsAmount);
 			for (int i = 0; i < CarsAmount; i++)
 			{
-				computation.Add( Evaluation.RouteDistance(this, routeIndex: i, (p1, p2) => FitnessFunc(p1, p2, mode) ) );
+				computation.Add(
+					Evaluation.RouteDistance(this,
+						routeIndex: i,
+						fitness: (p1, p2) => FitnessFunc(p1, p2, mode)
+					)
+				);
 			}
 			double[] values = await Task.WhenAll( computation );
 			double result = WarehousesChromosome.Mode == Mode.Time ? values.Max() : values.Sum();

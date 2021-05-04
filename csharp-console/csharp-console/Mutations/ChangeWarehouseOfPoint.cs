@@ -9,11 +9,11 @@ namespace csharp_console.Mutations
 {
 	class ChangeWarehouseOfPoint
 	{
-		private static Random rand;
 		public async static Task SimpleChange(WarehousesChromosome whc)
 		{
-			rand = RandomService.GetInstance();
 			if (whc.warehouses.Length == 1) return;
+
+			var rand = RandomService.GetInstance();
 
 			double oldTimeFitness = whc.TimeFitness;
 			double oldDistanceFitness = whc.DistanceFitness;
@@ -33,6 +33,7 @@ namespace csharp_console.Mutations
 
 			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
 			var whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
+			// allow adding to warehouses with all empty routes
 			var whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
 			while ( whFrom == whTo )
 			{
@@ -48,8 +49,8 @@ namespace csharp_console.Mutations
 			double whFromOldFitness = whFrom.Fitness;
 			double whToOldFitness = whTo.Fitness;
 
-			int routeIndexFrom = GetRouteIndexFrom(whFrom);
-			int routeIndexTo = GetRouteIndexTo(whTo);
+			int routeIndexFrom = GetRouteIndexFrom(whFrom, random: rand);
+			int routeIndexTo = GetRouteIndexTo(whTo, random: rand);
 
 			int pointIndexFrom = rand.Next(whFrom.CarRoutes[routeIndexFrom].Count);
 			int pointIndexTo = rand.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
@@ -104,14 +105,14 @@ namespace csharp_console.Mutations
 				return d2;
 		}
 
-		private static int GetRouteIndexTo(Warehouse whTo)
+		private static int GetRouteIndexTo(Warehouse whTo, Random random)
 		{
 			// maybe prefer routes with closer points?
 			// random for now
-			return rand.Next(whTo.CarRoutes.Length);
+			return random.Next(whTo.CarRoutes.Length);
 		}
 
-		private static int GetRouteIndexFrom(Warehouse whFrom)
+		private static int GetRouteIndexFrom(Warehouse whFrom, Random random)
 		{
 			List<int> indices = new List<int>();
 			for (int i = 0; i < whFrom.CarRoutes.Length; i++)
@@ -119,7 +120,7 @@ namespace csharp_console.Mutations
 				if (whFrom.CarRoutes[i].Count > 0)
 					indices.Add(i);
 			}
-			return indices[rand.Next(indices.Count)];
+			return indices[random.Next(indices.Count)];
 		}
 	}
 }

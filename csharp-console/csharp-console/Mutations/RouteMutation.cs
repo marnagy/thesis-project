@@ -14,23 +14,20 @@ namespace csharp_console.Mutations
 		{
 			var rand = RandomService.GetInstance();
 			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
-			double oldTimeFitness = wh.TimeFitness;
-			double oldDistanceFitness = wh.DistanceFitness;
 			List<PointD> route = wh.CarRoutes[ rand.Next(wh.CarsAmount) ];
 			int length = route.Count;
+
+			// this mutation has no sense if the route has less than 2 points
 			if (length < 2)
 				return;
+			
+			double oldTimeFitness = wh.TimeFitness;
+			double oldDistanceFitness = wh.DistanceFitness;
 
 			int index1 = rand.Next(length);
-			var other = new List<int>(length-1);
-			for (int i = 0; i < length; i++)
-			{
-				if (i != index1)
-				{
-					other.Add(i);
-				}
-			}
-			int index2 = other[ rand.Next(length-1) ];
+			int index2 = rand.Next(length);
+			while (index1 == index2)
+				index2 = rand.Next(length);
 
 			PointD temp = route[index1];
 			route[index1] = route[index2];

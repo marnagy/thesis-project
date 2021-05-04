@@ -18,11 +18,13 @@ namespace csharp_console
         /// <returns></returns>
         public static double NextGaussian(this Random r, double mu = 0, double sigma = 1)
         {
-            var u1 = r.NextDouble();
+            // added while loops so variable isn't 0
+            // so Log of variable is not NaN
+            double u1 = r.NextDouble();
             while ( u1 == 0d ){
                 u1 = r.NextDouble();
             }
-            var u2 = r.NextDouble();
+            double u2 = r.NextDouble();
             while ( u2 == 0d ){
                 u2 = r.NextDouble();
             }

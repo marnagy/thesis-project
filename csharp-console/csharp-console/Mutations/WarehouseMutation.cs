@@ -16,6 +16,7 @@ namespace csharp_console.Mutations
 			var rand = RandomService.GetInstance();
 			int whIndex = rand.Next(whc.warehouses.Length);
 			Warehouse wh = whc.warehouses[whIndex];
+			
 			double oldTimeFitness = wh.TimeFitness;
 			double oldDistanceFitness = wh.DistanceFitness;
 			PointD oldPoint = wh.Point;
@@ -28,7 +29,6 @@ namespace csharp_console.Mutations
 			{
 				Console.WriteLine($"Old Points: {oldPoint.X}, {oldPoint.Y}");
 				Console.WriteLine($"New Points: {x}, {y}");
-				int a = 5;
 			}
 			newPoint = new PointD(x, y);
 
