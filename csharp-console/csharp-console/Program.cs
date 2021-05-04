@@ -30,6 +30,7 @@ namespace csharp_console
 			string defaultOutDir = "csharp_results";
 			const string defaultLineSeparator = ";";
 			const Mode defaultMode = Mode.Time;
+			Config config;
 
 			string lineSeparator = defaultLineSeparator;
 			string source = defaultSource;
@@ -74,6 +75,16 @@ namespace csharp_console
 					return;
 				}
 				Console.WriteLine($"Set config file to {configFile}");
+				// load evolutionary algorithm constants
+				config = Config.FromJson(configFile);
+				CheckConfiguration(config);
+				Evaluation.StartManaging(locks: config.MaxParallelRequests);
+				ThreadPool.SetMaxThreads(config.MaxParallelRequests, config.MaxParallelRequests);
+				Evaluation.baseAddress = $"http://{config.ServerHost}:{config.ServerPort}";
+				using ( var writer = new StreamWriter( File.OpenWrite(Path.Combine(OutDir, "config.json"))) )
+				{
+					writer.Write( config.ToString() );
+				}
 			}
 
 			{
@@ -139,14 +150,6 @@ namespace csharp_console
 				higherRight = new PointD(
 					coords.Select(x => x.X).Max(),
 					coords.Select(x => x.Y).Max());
-			
-
-			// load evolutionary algorithm constants
-			var config = Config.FromJson(configFile);
-			CheckConfiguration(config);
-			Evaluation.StartManaging(locks: config.MaxParallelRequests);
-			ThreadPool.SetMaxThreads(config.MaxParallelRequests, config.MaxParallelRequests);
-			Evaluation.baseAddress = $"http://{config.ServerHost}:{config.ServerPort}";
 
 			// evolutionary algorithm
 			IList<WarehousesChromosome> population;
