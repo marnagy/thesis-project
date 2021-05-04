@@ -21,7 +21,6 @@ from argparse import ArgumentParser, Namespace
 
 RESULTS_DIR_NAME = "result_visualization"
 counter = 0
-out_ext = 'pdf'
 graph = None
 
 class Point:
@@ -163,6 +162,7 @@ def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("-m", "--map_path", type=str, help="Path of directory containing solutions (.wh files) .", required=True)
     parser.add_argument("-f", "--file_path", default="", type=str, help="Path of directory containing solutions (.wh files) .")
+    parser.add_argument("-e", "--extension", default="pdf", type=str, help="Extension of the output file/files.")
 
     args = parser.parse_args(None)
 
@@ -264,7 +264,7 @@ def get_route(point1, point2, weight: str) -> List[int]:
 plot_colors = ['r', 'g', 'c', 'y', 'b']
 wh_color = 'm'
 
-def save_routes(warehouses: List[Warehouse], filename: str):
+def save_routes(warehouses: List[Warehouse], filename: str, out_ext: str):
     '''Saves visualization of solution to given output file name with specified extension.
 
     :param warehouses: Loaded warehouses
@@ -367,7 +367,7 @@ def main():
             try:
                 print("Loading from file {}".format(wh_file_name))
                 warehouses = load_warehouses(wh_file_name)
-                save_routes(warehouses, wh_file_name)
+                save_routes(warehouses, wh_file_name, args.extension)
             except nx.NetworkXNoPath:
                 print("Illegal solution: No path to node found.")
             finally:
@@ -382,7 +382,7 @@ def main():
                 return
             print("Loading from file {}".format(filename))
             warehouses = load_warehouses(filename)
-            save_routes(warehouses, filename)
+            save_routes(warehouses, filename, args.extension)
         except nx.NetworkXNoPath:
             print("Illegal solution: No path to node found.")
         finally:
