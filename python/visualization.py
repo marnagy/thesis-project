@@ -71,7 +71,8 @@ class Warehouse:
     '''
     point = None
     routes = None
-    fitness = None
+    fitness_time = None
+    fitness_distance = None
 
     def __init__(self, point: Point):
         self.point = point
@@ -100,13 +101,14 @@ class Warehouse:
         else:
             self.routes.append(route)
     
-    def add_fitness(self, fitness: float):
+    def add_fitness(self, fitness_time: float, fitness_distance: float):
         '''Add fitness to object.
 
         :param fitness: fitness value of current Warehouse object
         :type fitness: float
         '''
-        self.fitness = fitness
+        self.fitness_time = fitness_time
+        self.fitness_distance = fitness_distance
 
     # @staticmethod
     # def from_json(wh_json):
@@ -181,18 +183,27 @@ def load_warehouses(filename: str) -> List[Warehouse]:
     lines = None
     with open(filename, mode="r") as in_file:
         lines = list(map(lambda x: x.strip(), in_file.readlines()))
-    is_fitness = True
+    is_fitness_time = True
+    is_fitness_distance = False
     is_point = False
     is_route = False
 
     wh_point = None
-    fitness = None
+    fitness_time = None
+    fitness_distance = None
     routes = None
     for line in lines:
-        if is_fitness and (not is_point) and (not is_route):
-            fitness = double(line)
-            is_fitness = False
-            is_point = True
+        if is_fitness_time and (not is_fitness_distance) and (not is_point) and (not is_route):
+            fitness_time = double(line)
+            is_fitness_time = False
+            is_fitness_distance = True
+            is_point = False
+            continue
+            
+        if is_fitness_distance and (not is_fitness_time) and (not is_point) and (not is_route):
+            fitness_distance = double(line)
+            is_fitness_distance = False
+            is_point = False
             continue
             
         if is_point and not is_route:
@@ -208,7 +219,7 @@ def load_warehouses(filename: str) -> List[Warehouse]:
                 #print("Routes:")
                 for route in routes:
                     wh.add_route( route )
-                wh.add_fitness(fitness)
+                wh.add_fitness(fitness_time, fitness_distance)
                 routes = []
                 fitness = None
                 warehouses.append( wh )
@@ -233,18 +244,6 @@ def create_json(warehouses):
         'chromosome': list(map(lambda x: x.json(), warehouses))
     }
 
-# def get_and_save_photo(wh_json, filename: str):
-#     print("JSON to send: {}".format(wh_json))
-#     print("Getting file...")
-#     resp = requests.post(url="http://localhost:5000/graph", json=wh_json)
-#     dt = datetime.now()
-#     name = "result_{}_{}_{}.png".format(
-#         dt.second, dt.minute, dt.hour
-#     )
-#     with open(name, mode="xb") as out_file:
-#         out_file.write(resp.content)
-#     print("File saved as {}".format(name))
-
 def get_node(point) -> int:
     '''Retrieve closes node on map to the given point.
 
@@ -261,7 +260,7 @@ def get_route(point1, point2, weight: str) -> List[int]:
                 weight=weight)
     return route
 
-plot_colors = ['r', 'g', 'c', 'y', 'b']
+plot_colors = ['b', 'g', 'r', 'c', 'y']
 wh_color = 'm'
 
 def save_routes(warehouses: List[Warehouse], filename: str, out_ext: str):

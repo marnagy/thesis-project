@@ -9,8 +9,6 @@ import sys
 import math
 from argparse import ArgumentParser, Namespace
 
-#out_format = 'png'
-
 def get_args() -> Namespace:
     parser = ArgumentParser()
     #parser.add_argument("-m", "--map_path", type=str, help="Path of map file (OSM file) .", required=True)
@@ -36,10 +34,10 @@ def double(text: str) -> float:
 
 def main():
     args = get_args()
-    print("Setting 'Base' to {}".format(args.base))
-    print("Setting 'Alg' to {}".format(args.alg))
-    print("Setting 'Type' to {}".format(args.type))
-    print("Setting 'Format' to {}".format(args.format))
+    print("'Base' = {}".format(args.base))
+    print("'Alg' = {}".format(args.alg))
+    print("'Type' = {}".format(args.type))
+    print("'Format' = {}".format(args.format))
     # print("Dires: {}".format(dirs))
     # files = glob.glob( os.path.join(dirs[1], 'result_*.csv') )
     # print("Files: {}".format(files) )
@@ -73,6 +71,9 @@ def main():
 
     out_file_name = "comparison-{}-{}_{}.{}".format(args.base, args.alg, args.type, args.format) #os.path.join(args.dir_path, 'progress_plot')
 
+    # make plot bigger
+    fig = plt.gcf()
+    fig.set_size_inches(12, 8)
     if args.mode == 'show':
         plt.show()
     elif args.mode == 'save':

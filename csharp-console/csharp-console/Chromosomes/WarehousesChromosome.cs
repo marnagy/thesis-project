@@ -150,7 +150,8 @@ namespace csharp_console
         public override string ToString()
         {
             var sb = new StringBuilder();
-			sb.AppendLine(this.Fitness.ToString());
+			sb.AppendLine(TimeFitness.ToString());
+			sb.AppendLine(DistanceFitness.ToString());
 			foreach (var warehouse in this.warehouses)
 			{
 

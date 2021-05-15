@@ -164,7 +164,7 @@ if __name__ == '__main__':
     map_filename = args.map_path
 
     print("Loading map data...")
-    ox.config(use_cache=True, )
+    ox.config(use_cache=True)
     graph = ox.load_graphml(map_filename)
     #graph = ox.graph_from_xml(map_filename)
     print("Adding speeds to edges...")
@@ -183,4 +183,5 @@ if __name__ == '__main__':
     #api.add_resource(FinalGraph, '/graph')
 
     #app.run(host='0.0.0.0', port=5_000, debug=True, threaded=True)
-    app.run(host='0.0.0.0', port=5_000, threaded=True)
+    app.run(host='0.0.0.0', port=5_000, threaded=False, processes=2)
+    #app.run(host='0.0.0.0', port=5_000, threaded=True)

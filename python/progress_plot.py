@@ -1,11 +1,9 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
 import os
 
-import math
 from argparse import ArgumentParser, Namespace
 
 out_format = 'png'
@@ -13,11 +11,14 @@ out_format = 'png'
 def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("-d", "--dir_path", type=str, help="Path of directory containing solutions (.wh files) .", required=True)
-    parser.add_argument("-m", "--mode", type=str, help="[time, distance]", required=True)
+    parser.add_argument("-t", "--type", default='time', type=str, help="[time, distance]")
+    parser.add_argument("-m", "--mode", default='show', type=str, help="[save, show]")
 
     args = parser.parse_args(None)
 
-    if args.mode not in ['time', 'distance']:
+    if args.type not in ['time', 'distance']:
+        raise Exception('Invalid type {}'.format(args.mode))
+    if args.mode not in ['save', 'show']:
         raise Exception('Invalid mode {}'.format(args.mode))
     return args
 
@@ -31,9 +32,9 @@ def convert(x):
 
 def main():
     args = get_args()
-    mode = args.mode
+    type = args.type
     df = pd.concat( [pd.read_csv(f, sep=';') for f in glob.glob( os.path.join(
-            args.dir_path, 'result_*_{}.csv'.format(mode)
+            args.dir_path, 'result_*_{}.csv'.format(type)
         ) ) ], ignore_index=True)
 
 
@@ -49,12 +50,16 @@ def main():
 
     ax.legend(['Min', 'Avg', 'Max'])
     ax.set_xlabel('Generations')
-    ax.set_ylabel('Time (seconds)' if mode == 'time' else 'Distance (meters)')
+    ax.set_ylabel('Time (seconds)' if type == 'time' else 'Distance (meters)')
 
     out_file_name = os.path.join(args.dir_path, 'progress_plot')
 
-    plt.show()
-    #plt.savefig( '{}.{}'.format( out_file_name, out_format ) )
+    if args.mode == 'show':
+        plt.show()
+    else:
+        out_filename = '{}.{}'.format( out_file_name, out_format )
+        plt.savefig( out_filename )
+        print('Figure saved to {}'.format(out_filename))
 
 if __name__ == "__main__":
     main()

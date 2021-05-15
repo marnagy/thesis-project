@@ -8,8 +8,8 @@ def get_args() -> Namespace:
     :rtype: Namespace
     """
     parser = ArgumentParser()
-    parser.add_argument("-p", "--place", default="Prague", type=str, help="Name of place to get map of.")
-    parser.add_argument("-o", "--out_file", default="prague_map", type=str, help="Output file name.")
+    parser.add_argument("-p", "--place", type=str, help="Name of place to get map of.", required=True)
+    parser.add_argument("-o", "--out_file", default="", type=str, help="Output file name.")
 
     args = parser.parse_args(None)
     return args
@@ -30,11 +30,14 @@ def download_map(place_name: str, out_filename: str):
     graph = ox.add_edge_speeds(graph)
     graph = ox.add_edge_travel_times(graph)
     print("Saving...")
-    #ox.save_graph_geopackage(graph, filepath='prague_map.gpkg', directed=True)
     ox.save_graphml(graph, filepath="{}.graphml".format(out_filename) )
-    #ox.save_graph_xml(graph, filepath='prague_map.osm')
     print("Graph saved.")
 
 if __name__ == "__main__":
     args = get_args()
-    download_map(args.place, args.out_file)
+    download_map(
+        args.place, 
+        args.out_file if args.out_file != '' else '{}_map'.format(
+            args.place
+            )
+        )

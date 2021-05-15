@@ -10,7 +10,8 @@ def get_args() -> Namespace:
     :rtype: Namespace
     """
     parser = ArgumentParser()
-    parser.add_argument("--amount", default=20, type=int, help="Amount of shops to get.")
+    parser.add_argument('-n', "--amount", default=20, type=int, help="Amount of shops to get.")
+    parser.add_argument("-p", "--place", default="Prague", type=str, help="Name of place to get map of.")
 
     args = parser.parse_args(None)
     return args
@@ -62,7 +63,7 @@ def print_coords(coords: List[Tuple[float, float]], args: Namespace):
 
 def main():
     args = get_args()
-    result = get_query_result("Praha")
+    result = get_query_result(args.place)
     coords = result_to_coords(result)
     print_coords(coords, args)
 
