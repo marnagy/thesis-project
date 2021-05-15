@@ -14,10 +14,7 @@ import sys
 from argparse import ArgumentParser, Namespace
 
 # custom datatypes
-from visualization import Point, Warehouse
-
-
-#print("Adding API paths...")
+from data import Point, Warehouse
 
 def get_args() -> Namespace:
     parser = ArgumentParser()
@@ -173,15 +170,18 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
     api = Api(app)
+    p = Point(2, 3)
+    print(p)
 
     # Add endpoints
     api.add_resource(HelloWorld, '/')
-    #api.add_resource(DateTime, '/datetime')
     api.add_resource(Distance, '/shortest/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
     api.add_resource(TravelTime, '/traveltime/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
-    #api.add_resource(Path, '/path')
-    #api.add_resource(FinalGraph, '/graph')
 
-    #app.run(host='0.0.0.0', port=5_000, debug=True, threaded=True)
-    app.run(host='0.0.0.0', port=5_000, threaded=False, processes=2)
-    #app.run(host='0.0.0.0', port=5_000, threaded=True)
+    # Should work according to the werkzeug docs (Flask is built on werkzeug module)
+    # Not supported on Windows
+    # Should highly improve performance of the server
+    #app.run(host='0.0.0.0', port=5_000, threaded=False, processes=4)
+
+    # multithreaded but on 1 core
+    app.run(host='0.0.0.0', port=5_000, threaded=True)
