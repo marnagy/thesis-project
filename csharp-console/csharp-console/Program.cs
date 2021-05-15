@@ -89,23 +89,29 @@ namespace csharp_console
 
 			{
 				// set seed
-				if ( args.Length >= 4 && int.TryParse(args[3], out int seed))
+				if ( args.Length >= 4 )
 				{
-					RandomService.SetSeed(seed);
-				}
-				else
-				{
-					Console.WriteLine("Seed is not valid integer.");
-					return;
+					if ( int.TryParse(args[3], out int seed) )
+					{
+						RandomService.SetSeed(seed);
+						System.Console.WriteLine($"Seed set to {seed}.");
+					}
+					else
+					{
+						Console.WriteLine("Seed is not valid integer.");
+						return;
+					}
 				}
 			}
 
 			{
 				// set mode
-				if (args.Length >= 5){
+				if (args.Length >= 5)
+				{
 					if ( int.TryParse(args[4], out int modeNum) && ( modeNum >= 1 && modeNum <= 2 ) )
 					{
 						mode = (Mode)modeNum;
+						System.Console.WriteLine($"Mode set to {mode}.");
 					}
 					else
 					{
@@ -152,13 +158,13 @@ namespace csharp_console
 					coords.Select(x => x.Y).Max());
 
 			// evolutionary algorithm
-			IList<WarehousesChromosome> population;
+			IList<WarehousesChromosome> lastPopulation;
 			WarehousesChromosome bestSolution;
 
 			for (int i = 0; i < config.Runs; i++)
 			{
 				//results.Add(
-				population = GeneticAlgorithm(
+				lastPopulation = GeneticAlgorithm(
 						coords,
 						lowerLeft,
 						higherRight,
@@ -173,11 +179,8 @@ namespace csharp_console
 						OutputDirPath: OutDir
 						);
 
-				bestSolution = population
-					.First( 
-						whch => whch.Fitness == population
-							.Min(whc => whc.Fitness)
-							);
+				bestSolution = lastPopulation
+					.First(	whch => whch.Fitness == lastPopulation.Min(whc => whc.Fitness) );
 
 				string whText = bestSolution.ToString();
 
@@ -264,7 +267,7 @@ namespace csharp_console
 			string csvDistancePath = Path.Combine(OutputDirPath, csvDistanceFile(currentRun) );
 
 			using ( StreamWriter csvTimeStream = new StreamWriter( File.Create( csvTimePath ) ),
-								 csvDistanceStream = new StreamWriter( File.Create( csvDistancePath ) ))
+								 csvDistanceStream = new StreamWriter( File.Create( csvDistancePath ) ) )
 			{
 				csvTimeStream.WriteLine("gen;std;min;avg;max");
 				csvDistanceStream.WriteLine("gen;std;min;avg;max");
