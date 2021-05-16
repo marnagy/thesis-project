@@ -25,13 +25,28 @@ namespace csharp_console.Mutations
 			double oldDistanceFitness = wh.DistanceFitness;
 
 			int index1 = rand.Next(length);
-			int index2 = rand.Next(length);
-			while (index1 == index2)
-				index2 = rand.Next(length);
+			int[] availableIndices = new int[length-1];
+			{
+				int temp = 0;
+				for (int i = 0; i < length; i++)
+				{
+					if (i == index1){
+						temp = 1;
+						continue;
+					}
+					
+					availableIndices[i - temp] = i;
+				}
+			}
+			int index2 = availableIndices[ rand.Next(availableIndices.Length) ];
+			// while (index1 == index2)
+			// 	index2 = rand.Next(length);
 
-			PointD temp = route[index1];
-			route[index1] = route[index2];
-			route[index2] = temp;
+			{
+				PointD temp = route[index1];
+				route[index1] = route[index2];
+				route[index2] = temp;
+			}
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
 			double newDistanceFitness = oldDistanceFitness;
@@ -48,9 +63,11 @@ namespace csharp_console.Mutations
 			else
 			{
 				// swap back and set old fitness
-				temp = route[index1];
-				route[index1] = route[index2];
-				route[index2] = temp;
+				{
+					var temp = route[index1];
+					route[index1] = route[index2];
+					route[index2] = temp;
+				}
 				wh.ReturnFitness(oldTimeFitness, Mode.Time);
 				wh.ReturnFitness(oldDistanceFitness, Mode.Distance);
 			}

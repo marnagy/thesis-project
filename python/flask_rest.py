@@ -170,8 +170,6 @@ if __name__ == '__main__':
 
     app = Flask(__name__)
     api = Api(app)
-    p = Point(2, 3)
-    print(p)
 
     # Add endpoints
     api.add_resource(HelloWorld, '/')

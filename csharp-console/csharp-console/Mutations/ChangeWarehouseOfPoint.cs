@@ -11,7 +11,7 @@ namespace csharp_console.Mutations
 	{
 		public async static Task SimpleChange(WarehousesChromosome whc)
 		{
-			if (whc.warehouses.Length == 1) return;
+			if (whc.warehouses.Length == 1 && whc.warehouses[0].CarRoutes.Length == 1) return;
 
 			var rand = RandomService.GetInstance();
 
@@ -32,25 +32,37 @@ namespace csharp_console.Mutations
 			// 	return;
 
 			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
-			var whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
-			// allow adding to warehouses with all empty routes
-			var whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
-			while ( whFrom == whTo )
-			{
-				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
-			}
-			//nonEmptyWHIndices.Clear();
-
+			Warehouse whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
+			Warehouse whTo;
 			double fromOldTimeFitness = whFrom.TimeFitness;
-			double fromOldDistanceFitness = whFrom.DistanceFitness;
-			double toOldTimeFitness = whTo.TimeFitness;
-			double toOldDistanceFitness = whTo.DistanceFitness;
+			double fromOldDistanceFitness;
+			double toOldTimeFitness;
+			double toOldDistanceFitness;
+			double whFromOldFitness;
+			double whToOldFitness;
+			int routeIndexFrom;
+			int routeIndexTo;
+			do
+			{
+				// allow adding to warehouses with all empty routes
+				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
+				// while ( whFrom == whTo )
+				// {
+				// 	whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
+				// }
 
-			double whFromOldFitness = whFrom.Fitness;
-			double whToOldFitness = whTo.Fitness;
+				fromOldTimeFitness = whFrom.TimeFitness;
+				fromOldDistanceFitness = whFrom.DistanceFitness;
+				toOldTimeFitness = whTo.TimeFitness;
+				toOldDistanceFitness = whTo.DistanceFitness;
 
-			int routeIndexFrom = GetRouteIndexFrom(whFrom, random: rand);
-			int routeIndexTo = GetRouteIndexTo(whTo, random: rand);
+				whFromOldFitness = whFrom.Fitness;
+				whToOldFitness = whTo.Fitness;
+
+				routeIndexFrom = GetRouteIndexFrom(whFrom, random: rand);
+				routeIndexTo = GetRouteIndexTo(whTo, random: rand);
+				
+			} while (whFrom == whTo && routeIndexFrom == routeIndexTo);
 
 			int pointIndexFrom = rand.Next(whFrom.CarRoutes[routeIndexFrom].Count);
 			int pointIndexTo = rand.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
