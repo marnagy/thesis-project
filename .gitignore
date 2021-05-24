@@ -22,9 +22,14 @@
 # test files
 /test_[0-9]*
 /test_jihocesky*
+/test_prague*
+/test_test*
+
+/[0-9]*/result_visualization
 
 # map file
 /python/*map*
 
 /*.txt
-/*.json
+/*.pdf
+/*.png

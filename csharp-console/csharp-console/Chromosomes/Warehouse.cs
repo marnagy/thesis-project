@@ -119,5 +119,23 @@ namespace csharp_console
 				return val;
 			}
 		}
+		public override string ToString()
+		{
+			var sb = new StringBuilder(
+			$"Warehouse point: {this.Point}\n" +
+				"CarRoutes:");
+			foreach (var route in CarRoutes)
+			{
+				if (route.Count == 0)
+					continue;
+
+				sb.Append('\n');
+				foreach (var point in route)
+				{
+					sb.Append(point);
+				}
+			}
+			return sb.ToString();
+		}
 	}
 }

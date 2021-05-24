@@ -1,5 +1,6 @@
 import os
 import sys
+from types import TracebackType
 import matplotlib.pyplot as plt
 import osmnx as ox
 import networkx as nx
@@ -82,10 +83,12 @@ def load_warehouses(filename: str) -> List[Warehouse]:
         if is_fitness_distance and (not is_fitness_time) and (not is_point) and (not is_route):
             fitness_distance = double(line)
             is_fitness_distance = False
-            is_point = False
+            is_point = True
             continue
             
         if is_point and not is_route:
+            if line == '':
+                continue
             lineParts = line.split(';')
             wh_point = Point( double(lineParts[0]), double(lineParts[1]) )
             is_point = False
@@ -261,7 +264,7 @@ def main():
             print("Loading from file {}".format(filename))
             warehouses = load_warehouses(filename)
             save_routes(warehouses, filename, args.extension)
-        except nx.NetworkXNoPath:
+        except nx.NetworkXNoPath as e:
             print("Illegal solution: No path to node found.")
         finally:
             print()

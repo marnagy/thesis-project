@@ -13,6 +13,5 @@ coordinates = list(
         )
     )
 
-print(len(coordinates))
 for code in coordinates:
     print("{};{}".format(code[0], code[1]))

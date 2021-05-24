@@ -13,13 +13,48 @@ namespace csharp_console.Services
 		{
 			rand = new Random(seed);
 		}
-		public static Random GetInstance()
+		//public static Random GetInstance()
+		//{
+		//	if (rand == null)
+		//	{
+		//		rand = new Random();
+		//	}
+		//	return rand;
+		//}
+		public static int Next()
 		{
-			if (rand == null)
+			lock (rand)
 			{
-				rand = new Random();
+				return rand.Next();
 			}
-			return rand;
+		}
+		public static int Next(int maxValue)
+		{
+			lock (rand)
+			{
+				return rand.Next(maxValue);
+			}
+		}
+		public static int Next(int minValue, int maxValue)
+		{
+			lock (rand)
+			{
+				return rand.Next(minValue, maxValue);
+			}
+		}
+		public static double NextDouble()
+		{
+			lock (rand)
+			{
+				return rand.NextDouble();
+			}
+		}
+		public static double NextGaussian(double mu = 0, double sigma = 1)
+		{
+			lock (rand)
+			{
+				return rand.NextGaussian(mu, sigma);
+			}
 		}
 	}
 }

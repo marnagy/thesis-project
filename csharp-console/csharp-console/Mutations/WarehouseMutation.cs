@@ -13,8 +13,8 @@ namespace csharp_console.Mutations
 		private static double sigma = 0.005;
 		public async static Task NormalMove(WarehousesChromosome whc)
 		{
-			var rand = RandomService.GetInstance();
-			int whIndex = rand.Next(whc.warehouses.Length);
+			//Random rand = RandomService.GetInstance();
+			int whIndex = RandomService.Next(whc.warehouses.Length);
 			Warehouse wh = whc.warehouses[whIndex];
 			
 			double oldTimeFitness = wh.TimeFitness;
@@ -23,8 +23,8 @@ namespace csharp_console.Mutations
 			PointD newPoint;
 
 			double x, y;
-			x = rand.NextGaussian(oldPoint.X, sigma);
-			y = rand.NextGaussian(oldPoint.Y, sigma);
+			x = RandomService.NextGaussian(oldPoint.X, sigma);
+			y = RandomService.NextGaussian(oldPoint.Y, sigma);
 			if ( double.IsNaN(x) || double.IsNaN(y))
 			{
 				Console.WriteLine($"Old Points: {oldPoint.X}, {oldPoint.Y}");

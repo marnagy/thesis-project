@@ -81,6 +81,7 @@ namespace csharp_console
 				Evaluation.StartManaging(locks: config.MaxParallelRequests);
 				ThreadPool.SetMaxThreads(config.MaxParallelRequests, config.MaxParallelRequests);
 				Evaluation.baseAddress = $"http://{config.ServerHost}:{config.ServerPort}";
+				Evaluation.client.BaseAddress = new Uri( Evaluation.baseAddress );
 				using ( var writer = new StreamWriter( File.OpenWrite(Path.Combine(OutDir, "config.json"))) )
 				{
 					writer.Write( config.ToString() );
@@ -124,24 +125,21 @@ namespace csharp_console
 			}
 
 			// loading data from file
-			IList<PointD> coords;
-			using ( StreamReader sr = new StreamReader( new FileStream(source, FileMode.Open, FileAccess.Read) ) )
+			IList<PointD> coords = new List<PointD>();
+			string[] lineParts;
+
+			foreach (var line in File.ReadLines(source))
 			{
-				string line;
-				string[] lineParts;
-				coords = new List<PointD>();
-				while ( (line = sr.ReadLine()) != null)
-				{
-					if ( int.TryParse(line, out var _))
-					{
-						continue;
-					}
-					lineParts = line.Split(lineSeparator);
-					coords.Add( new PointD(
-						double.Parse(lineParts[0].Replace('.', ',')), 
-						double.Parse(lineParts[1].Replace('.', ','))
-						) );
-				}
+				// skip line containing amount of points
+				// if ( int.TryParse(line, out _) )
+				// {
+				// 	continue;
+				// }
+				lineParts = line.Split(lineSeparator);
+				coords.Add( new PointD(
+					double.Parse(lineParts[0].Replace('.', ',')), 
+					double.Parse(lineParts[1].Replace('.', ','))
+					) );
 			}
 			if (coords.Count == 0)
 			{
@@ -367,7 +365,7 @@ namespace csharp_console
 		}
 		private static void Compute(IList<WarehousesChromosome> population, Func<WarehousesChromosome, Task> func)
 		{
-			Compute(population, func, probability: 1.0);
+			Compute(population, func, probability: 1.0d);
 		}
 		private static void Compute(IList<WarehousesChromosome> population, Func<WarehousesChromosome, Task> func, double probability)
 		{

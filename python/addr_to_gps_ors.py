@@ -21,6 +21,5 @@ adresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
 
 coordinates = [ get_coords(addr) for addr in adresses ]
 
-print(len(coordinates))
 for coord in coordinates:
     print( "{};{}".format(coord[1], coord[0]) )

@@ -13,7 +13,7 @@ namespace csharp_console.Mutations
 		{
 			if (whc.warehouses.Length == 1 && whc.warehouses[0].CarRoutes.Length == 1) return;
 
-			var rand = RandomService.GetInstance();
+			//var rand = RandomService.GetInstance();
 
 			double oldTimeFitness = whc.TimeFitness;
 			double oldDistanceFitness = whc.DistanceFitness;
@@ -31,7 +31,7 @@ namespace csharp_console.Mutations
 			// if (nonEmptyWHIndices.Count < 2)
 			// 	return;
 
-			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
+			int fromWHIndex = RandomService.Next(nonEmptyWHIndices.Count);
 			Warehouse whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
 			Warehouse whTo;
 			double fromOldTimeFitness = whFrom.TimeFitness;
@@ -45,7 +45,7 @@ namespace csharp_console.Mutations
 			do
 			{
 				// allow adding to warehouses with all empty routes
-				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
+				whTo = whc.warehouses[ RandomService.Next( whc.warehouses.Length ) ];
 				// while ( whFrom == whTo )
 				// {
 				// 	whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
@@ -59,13 +59,21 @@ namespace csharp_console.Mutations
 				whFromOldFitness = whFrom.Fitness;
 				whToOldFitness = whTo.Fitness;
 
-				routeIndexFrom = GetRouteIndexFrom(whFrom, random: rand);
-				routeIndexTo = GetRouteIndexTo(whTo, random: rand);
+				routeIndexFrom = GetRouteIndexFrom(whFrom);
+				routeIndexTo = GetRouteIndexTo(whTo);
+
+				//Console.WriteLine("Wh mutation 'do while' loop");
+				//Console.WriteLine("whFrom:");
+				//Console.WriteLine(whFrom);
+				//Console.WriteLine($"routeIndexFrom: {routeIndexFrom}");
+				//Console.WriteLine("whTo:");
+				//Console.WriteLine(whTo);
+				//Console.WriteLine($"routeIndexTo: {routeIndexTo}");
 				
 			} while (whFrom == whTo && routeIndexFrom == routeIndexTo);
 
-			int pointIndexFrom = rand.Next(whFrom.CarRoutes[routeIndexFrom].Count);
-			int pointIndexTo = rand.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
+			int pointIndexFrom = RandomService.Next(whFrom.CarRoutes[routeIndexFrom].Count);
+			int pointIndexTo = RandomService.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
 
 			{
 				PointD point = whFrom.CarRoutes[routeIndexFrom][pointIndexFrom];
@@ -117,14 +125,14 @@ namespace csharp_console.Mutations
 				return d2;
 		}
 
-		private static int GetRouteIndexTo(Warehouse whTo, Random random)
+		private static int GetRouteIndexTo(Warehouse whTo)
 		{
 			// maybe prefer routes with closer points?
 			// random for now
-			return random.Next(whTo.CarRoutes.Length);
+			return RandomService.Next(whTo.CarRoutes.Length);
 		}
 
-		private static int GetRouteIndexFrom(Warehouse whFrom, Random random)
+		private static int GetRouteIndexFrom(Warehouse whFrom)
 		{
 			List<int> indices = new List<int>();
 			for (int i = 0; i < whFrom.CarRoutes.Length; i++)
@@ -132,7 +140,7 @@ namespace csharp_console.Mutations
 				if (whFrom.CarRoutes[i].Count > 0)
 					indices.Add(i);
 			}
-			return indices[random.Next(indices.Count)];
+			return indices[RandomService.Next(indices.Count)];
 		}
 	}
 }

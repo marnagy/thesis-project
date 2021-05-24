@@ -18,7 +18,8 @@ from data import Point, Warehouse
 
 def get_args() -> Namespace:
     parser = ArgumentParser()
-    parser.add_argument("-m", "--map_path", type=str, help="Path of map file (OSM file) .", required=True)
+    parser.add_argument("-m", "--map_path", type=str, help="Path of map file (graphml file).", required=True)
+    parser.add_argument("-p", "--port", default=5000, type=int, help="Port number.")
 
     args = parser.parse_args(None)
     return args
@@ -176,10 +177,10 @@ if __name__ == '__main__':
     api.add_resource(Distance, '/shortest/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
     api.add_resource(TravelTime, '/traveltime/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
 
-    # Should work according to the werkzeug docs (Flask is built on werkzeug module)
-    # Not supported on Windows
-    # Should highly improve performance of the server
-    #app.run(host='0.0.0.0', port=5_000, threaded=False, processes=4)
+    # Should work according to the werkzeug docs (Flask is built on top of the werkzeug module)
+    # Not supported on Windows (all testing was done on Windows)
+    # Should theoretically improve performance of the server
+    #app.run(host='0.0.0.0', port=args.port, threaded=False, processes=4)
 
     # multithreaded but on 1 core
-    app.run(host='0.0.0.0', port=5_000, threaded=True)
+    app.run(host='0.0.0.0', port=args.port, threaded=True)

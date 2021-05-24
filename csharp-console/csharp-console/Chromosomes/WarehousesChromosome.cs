@@ -73,10 +73,10 @@ namespace csharp_console
 
 		internal void InitRandomly(ISet<PointD> coords)
 		{
-			var rand = RandomService.GetInstance();
+			//var rand = RandomService.GetInstance();
 			foreach (var coord in coords)
 			{
-				var rand_value = rand.NextDouble();
+				var rand_value = RandomService.NextDouble();
 				//var val = 1d / warehouses.Length;
 
 				// calculate probabilities
@@ -95,7 +95,7 @@ namespace csharp_console
 					{
 						if (rand_value < probabilities[i])
 						{
-							warehouses[i].InsertToCar(rand.Next(warehouses[i].CarsAmount), coord);
+							warehouses[i].InsertToCar(RandomService.Next(warehouses[i].CarsAmount), coord);
 							break;
 						}
 						else
@@ -105,7 +105,7 @@ namespace csharp_console
 					}
 					else
 					{
-						warehouses[i].InsertToCar(rand.Next(warehouses[i].CarsAmount), coord);
+						warehouses[i].InsertToCar(RandomService.Next(warehouses[i].CarsAmount), coord);
 					}
 				}
 			}

@@ -12,9 +12,9 @@ namespace csharp_console.Mutations
 	{
 		public async static Task Swap(WarehousesChromosome whc)
 		{
-			var rand = RandomService.GetInstance();
-			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
-			List<PointD> route = wh.CarRoutes[ rand.Next(wh.CarsAmount) ];
+			//var rand = RandomService.GetInstance();
+			Warehouse wh = whc.warehouses[RandomService.Next(whc.warehouses.Length)];
+			List<PointD> route = wh.CarRoutes[ RandomService.Next(wh.CarsAmount) ];
 			int length = route.Count;
 
 			// this mutation has no sense if the route has less than 2 points
@@ -24,7 +24,7 @@ namespace csharp_console.Mutations
 			double oldTimeFitness = wh.TimeFitness;
 			double oldDistanceFitness = wh.DistanceFitness;
 
-			int index1 = rand.Next(length);
+			int index1 = RandomService.Next(length);
 			int[] availableIndices = new int[length-1];
 			{
 				int temp = 0;
@@ -38,7 +38,7 @@ namespace csharp_console.Mutations
 					availableIndices[i - temp] = i;
 				}
 			}
-			int index2 = availableIndices[ rand.Next(availableIndices.Length) ];
+			int index2 = availableIndices[ RandomService.Next(availableIndices.Length) ];
 			// while (index1 == index2)
 			// 	index2 = rand.Next(length);
 

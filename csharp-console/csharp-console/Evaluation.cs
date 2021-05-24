@@ -16,7 +16,7 @@ namespace csharp_console
 		// public EventWaitHandle eventWaithandle = new ManualResetEvent(false);
 		// public double result;
 		public static readonly HttpClient client;
-		public static string baseAddress { get; set; } = "http://localhost:5000";
+		public static string baseAddress { get; set; }
 
 		// optimalization if server cannot respond to all wanted requests
 		//private static readonly ConcurrentQueue<(PointD, PointD, string)> msgs = new ConcurrentQueue<(PointD, PointD, string)>();
@@ -31,7 +31,7 @@ namespace csharp_console
 		static Evaluation()
 		{
 			client = new HttpClient();
-			client.BaseAddress = new Uri(baseAddress);
+			//client.BaseAddress = new Uri(baseAddress);
 		}
 
 		public static void StartManaging(int locks)
@@ -63,15 +63,16 @@ namespace csharp_console
 			//Console.WriteLine($"Locked {i}");
 			var req = new HttpRequestMessage(HttpMethod.Get, uri);
 			//Console.WriteLine($"Sending request...");
-			var temp1 = client.GetAsync(uri);
-			temp1.Wait();
-			var response = temp1.Result;
-			//Console.WriteLine($"Received response...");
-			var temp2 = response.Content.ReadAsStringAsync();
-			temp2.Wait();
-			var content = temp2.Result;
 			double result;
+			string content = null;
 			try{
+				var temp1 = client.GetAsync(uri);
+				temp1.Wait();
+				var response = temp1.Result;
+				//Console.WriteLine($"Received response...");
+				var temp2 = response.Content.ReadAsStringAsync();
+				temp2.Wait();
+				content = temp2.Result;
 				var json = JsonConvert.DeserializeObject<Dictionary<string, double>>(content);
 				result = json[jsonArgument];
 			}
@@ -79,6 +80,12 @@ namespace csharp_console
 			{
 				System.Console.WriteLine($"uri: {uri}");
 				System.Console.WriteLine($"Content: {content}");
+				System.Console.WriteLine(e.ToString());
+				throw e;
+			}
+			catch (Exception e)
+			{
+				System.Console.WriteLine($"uri: {uri}");
 				System.Console.WriteLine(e.ToString());
 				throw e;
 			}
