@@ -31,6 +31,8 @@
 /python/*map*
 /python/*.json
 
+/end_*_points_*/result_visualization
+
 /*.txt
 /*.pdf
 /*.png

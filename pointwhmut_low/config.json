@@ -4,6 +4,7 @@
     2,
     2
   ],
+  "WarehousePositions": null,
   "NGen": 100,
   "PopulationSize": 10,
   "WarehouseMutProb": 0.6,
