@@ -29,6 +29,7 @@
 
 # map file
 /python/*map*
+/python/*.json
 
 /*.txt
 /*.pdf
