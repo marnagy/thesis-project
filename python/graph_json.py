@@ -6,7 +6,7 @@ import os
 def get_args() -> Namespace:
     parser = ArgumentParser()
 
-    parser.add_argument('-f', '--file', type=str, help='Path to the graphml file containing the graph.')
+    parser.add_argument('-m', '--map_file', type=str, help='Path to the graphml file containing the graph.')
     parser.add_argument('-p', '--place', type=str, help='Name of place to be downloaded by OSMnx.')
 
     args = parser.parse_args(None)
@@ -15,22 +15,22 @@ def get_args() -> Namespace:
 def main():
     args = get_args()
 
-    if (not args.file) and (not args.place):
+    if (not args.map_file) and (not args.place):
         print('Please, choose one of the methods.')
         exit(1)
 
-    if args.file and args.place:
+    if args.map_file and args.place:
         print('Cannot load from file AND from internet (place).')
         print('Please, choose one of the methods.')
         exit(1)
 
-    if args.file is not None:
-        if not os.path.isfile(args.file):
-            print(f'File {args.file} does not exist.')
+    if args.map_file is not None:
+        if not os.path.isfile(args.map_file):
+            print(f'File {args.map_file} does not exist.')
             exit(1)
         
         #print('Loading...')
-        graph = ox.load_graphml(args.file)
+        graph = ox.load_graphml(args.map_file)
         #print('Creating json file...')
         ox_nodes = list(graph.nodes(data=True))
         ox_edges = list(graph.edges(keys=True, data=True))
