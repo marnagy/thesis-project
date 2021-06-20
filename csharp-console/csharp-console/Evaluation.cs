@@ -13,38 +13,19 @@ namespace csharp_console
 {
 	public class Evaluation
 	{
-		// public EventWaitHandle eventWaithandle = new ManualResetEvent(false);
-		// public double result;
 		public static readonly HttpClient client;
 		public static string baseAddress { get; set; }
-
-		// optimalization if server cannot respond to all wanted requests
-		//private static readonly ConcurrentQueue<(PointD, PointD, string)> msgs = new ConcurrentQueue<(PointD, PointD, string)>();
-		//private static Queue<(PointD, PointD)> freeLocks;
-		//private static object[] msgLocks;
-		//private static bool[] msgIndicators;
-		//private static int timeConst;
-		private static Semaphore _pool;
-		//private static bool killManager;
-		//private static string requestUri;
+		private static Semaphore _semaphore;
 
 		static Evaluation()
 		{
 			client = new HttpClient();
-			//client.BaseAddress = new Uri(baseAddress);
 		}
 
 		public static void StartManaging(int locks)
 		{
-			//ThreadPool.SetMaxThreads(locks, locks);
-			_pool = new Semaphore(locks, locks*2);
-			// msgLocks = new object[locks];
-			// for (int i = 0; i < msgLocks.Length; i++)
-			// {
-			// 	msgLocks[i] = new object();
-			// }
-			//msgIndicators = new bool[locks];
-			//timeConst = miliseconds;
+			//_pool = new Semaphore(locks, locks*2);
+			_semaphore = new Semaphore(locks, locks);
 		}
 
 		private static double Request(string uri, string jsonArgument)
@@ -52,24 +33,16 @@ namespace csharp_console
 			if (string.IsNullOrEmpty(uri)){
 				throw new ArgumentException($"Wrong URI: {uri}");
 			}
-			// while ( true )
-			// {
-			// 	for (int i = 0; i < msgLocks.Length; i++)
-			// 	{
-			// 		//Console.WriteLine($"Trying lock number {i}");
-			// 		if ( Monitor.TryEnter( msgLocks[i] ) )
-			// 		{
 
-			//Console.WriteLine($"Locked {i}");
 			var req = new HttpRequestMessage(HttpMethod.Get, uri);
-			//Console.WriteLine($"Sending request...");
-			double result;
+
+			double result = 0;
 			string content = null;
 			try{
 				var temp1 = client.GetAsync(uri);
 				temp1.Wait();
 				var response = temp1.Result;
-				//Console.WriteLine($"Received response...");
+
 				var temp2 = response.Content.ReadAsStringAsync();
 				temp2.Wait();
 				content = temp2.Result;
@@ -90,14 +63,7 @@ namespace csharp_console
 				throw e;
 			}
 
-			//Monitor.Exit( msgLocks[i] );
 			return result;
-
-			// 		}
-			// 	}
-			// 	//System.Console.WriteLine("Sleeping");
-			// 	Thread.Sleep(timeConst);
-			// }
 		}
 
 		public static double EuklidianDistance(PointD p1, PointD p2)
@@ -113,14 +79,11 @@ namespace csharp_console
 			if (wh.CarRoutes[routeIndex].Count > 0)
 			{
 				List<Task<double>> resultsTasks = new List<Task<double>>(wh.CarRoutes[routeIndex].Count);
-				//result += await fitness(wh.Point, wh.CarRoutes[routeIndex][0]);
 				resultsTasks.Add( fitness(wh.Point, wh.CarRoutes[routeIndex][0]) );
 				for (int i = 1; i < wh.CarRoutes[routeIndex].Count; i++)
 				{
-					//result += await fitness(wh.CarRoutes[routeIndex][i-1], wh.CarRoutes[routeIndex][i]);
 					resultsTasks.Add( fitness(wh.CarRoutes[routeIndex][i-1], wh.CarRoutes[routeIndex][i]) );
 				}
-				//result += await fitness(wh.CarRoutes[routeIndex][wh.CarRoutes[routeIndex].Count - 1], wh.Point);
 				resultsTasks.Add( fitness(wh.CarRoutes[routeIndex][wh.CarRoutes[routeIndex].Count - 1], wh.Point) );
 
 				double[] results = await Task.WhenAll(resultsTasks);
@@ -143,76 +106,11 @@ namespace csharp_console
 				argument = "travel_time";
 			}
 
-			//var msg = new HttpRequestMessage(HttpMethod.Get, uri);
-
-			//bool success = false;
-			//HttpResponseMessage response = null;
-
-			// SEMAPHORE
-			//System.Console.WriteLine("Waiting for semaphore...");
-			_pool.WaitOne();
-			//System.Console.WriteLine("In semaphore...");
+			_semaphore.WaitOne();
 			double result = Request(uri, argument);
-			_pool.Release();
-			//System.Console.WriteLine("Exited semaphore");
-			//Console.WriteLine($"Got result {result}");
+			_semaphore.Release();
 
-
-			// OTHER STUFF
-			// var eval = new Evaluation();
-			// ThreadPool.QueueUserWorkItem( _ =>
-			// {
-			// 	eval.result = Request(p1, p2, uri, argument);
-			// 	eval.eventWaithandle.Set();
-			// });
-			// var thread = new Thread(new ThreadStart( () =>
-			// {
-			// 	result = Request(p1, p2, uri, argument);
-			// 	eval.eventWaithandle.Set();
-			// } ));
-			// thread.Start();
-			// await Task.Delay(2_000);
-			// eval.eventWaithandle.WaitOne();
-			// result = eval.result;
-			//thread.Join();
-			// var eval = new Evaluation();
-			// ThreadPool.QueueUserWorkItem( evalObj =>
-			// {
-			// 	if ( evalObj != null )
-			// 	{
-			// 		var eval = (Evaluation)evalObj;
-			// 		result = eval.Request(p1, p2, uri, jsonArgument: argument);
-			// 		eval.eventWaithandle.Set();
-			// 	}
-			// }, eval, preferLocal: false);
-			// eval.eventWaithandle.WaitOne();
-			// ThreadPool.QueueUserWorkItem( objState => 
-			// {
-			// 	result = await Request(p1, p2, uri, jsonArgument: argument);
-			// } );
-			// var thread = new Thread(new ThreadStart( async () =>
-			// {
-			// 	result = await Request(p1, p2, uri, jsonArgument: argument);
-			// } ));
-			// thread.Start();
-			// thread.Join();
 			return result;
-			//success = response.StatusCode == System.Net.HttpStatusCode.OK;
-			//string content = await response.Content.ReadAsStringAsync();
-			////try
-			////{
-			//var json = JsonConvert.DeserializeObject<Dictionary<string, double>>(content);
-			//if (distance)
-			//	return json["meters_distance"];
-			//else
-			//	return json["travel_time"];
-
-			//}
-			//catch (Exception e)
-			//{
-			//	int a = 5;
-			//	return 100_000;
-			//}
 		}
 	}
 }

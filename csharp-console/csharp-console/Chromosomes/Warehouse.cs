@@ -10,10 +10,7 @@ namespace csharp_console
 {
 	public class Warehouse
 	{
-		private static Random rand = new Random();
-		//public static Func<PointD, PointD, Task<double>> fitness = async (p1, p2) => {
-			
-		//} ; //Evaluation.EuklidianDistance;
+		public static bool UseCache { get; private set; } = true;
 
 		public PointD Point;
 		public readonly int CarsAmount;
@@ -34,14 +31,11 @@ namespace csharp_console
 		public static Warehouse Random(PointD lower_left, PointD higher_right, int cars)
 		{
 			return new Warehouse(
-				lower_left.X + rand.NextDouble()*(higher_right.X - lower_left.X),
-				lower_left.Y + rand.NextDouble()*(higher_right.Y - lower_left.Y),
+				lower_left.X + RandomService.NextDouble()*(higher_right.X - lower_left.X),
+				lower_left.Y + RandomService.NextDouble()*(higher_right.Y - lower_left.Y),
 				cars);
 		}
-		public static void SetSeed(int seed)
-		{
-			rand = new Random(seed);
-		}
+		public static void SetCache(bool value) => UseCache = value;
 		public Warehouse Clone()
 		{
 			var wh = new Warehouse(this.Point.X, this.Point.Y, this.CarsAmount);
@@ -83,6 +77,7 @@ namespace csharp_console
 
 		async internal Task<double> ComputeDistanceAndSave(Mode mode)
 		{
+
 			double result = await ComputeFitness(mode);
 			if (mode == Mode.Time)
 				TimeFitness = result;
@@ -98,19 +93,22 @@ namespace csharp_console
 				computation.Add(
 					Evaluation.RouteDistance(this,
 						routeIndex: i,
-						fitness: (p1, p2) => FitnessFunc(p1, p2, mode)
+						fitness: (p1, p2) => Warehouse.UseCache ?
+							FitnessFunc(p1, p2, mode) : 
+							Task.FromResult( FitnessFuncNoCache(p1, p2, mode) )
 					)
 				);
 			}
 			double[] values = await Task.WhenAll( computation );
-			double result = WarehousesChromosome.Mode == Mode.Time ? values.Max() : values.Sum();
+			//double result = WarehousesChromosome.Mode == Mode.Time ? values.Max() : values.Sum();
+			double result = mode == Mode.Time ? values.Max() : values.Sum();
 			return result;
 		}
 		private async Task<double> FitnessFunc(PointD p1, PointD p2, Mode mode)
 		{
 			if ( DBService.TryGetFitness(p1, p2, mode, out double value) )
 			{
-				return await Task.FromResult(value);
+				return value;
 			}
 			else
 			{
@@ -118,6 +116,11 @@ namespace csharp_console
 				DBService.TryAddValue(p1, p2, mode, val);
 				return val;
 			}
+		}
+		private double FitnessFuncNoCache(PointD p1, PointD p2, Mode mode)
+		{
+			var val = Evaluation.MapDistance(p1, p2, mode);
+			return val;
 		}
 		public override string ToString()
 		{

@@ -22,46 +22,26 @@ namespace csharp_console
 				this.warehouses[i] = warehouses[i].Clone();
 			}
 		}
-		public WarehousesChromosome(int length, PointD lower_left, PointD higher_right, int[] cars_amounts)
+		public WarehousesChromosome(int length, PointD lowerLeft, PointD higherRight, int[] carsAmounts)
 		{
-			if (length <= 0 || cars_amounts.Length != length)
+			if (length <= 0 || carsAmounts.Length != length)
 				throw new Exception("Wrong amount of warehouses or cars.");
 
 			// create warehouses
 			warehouses = new Warehouse[length];
 			for (int i = 0; i < length; i++)
 			{
-				warehouses[i] = Warehouse.Random(lower_left, higher_right, cars_amounts[i]);
+				warehouses[i] = Warehouse.Random(lowerLeft, higherRight, carsAmounts[i]);
 			}
 		}
 		public double Fitness { get => WarehousesChromosome.Mode == Mode.Time ? TimeFitness : DistanceFitness; }
-		public double TimeFitness { get; set; }
-		public double DistanceFitness { get; set; }
-
-		public int Length { get; set; }
-
-		// public WarehousesChromosome Clone()
-		// {
-		// 	var whc = new WarehousesChromosome(warehouses.Select(wh => wh.Clone()).ToArray());
-		// 	whc.TimeFitness = this.TimeFitness;
-		// 	whc.DistanceFitness = this.DistanceFitness;
-		// 	return whc;
-		// }
+		public double TimeFitness { get; set; } = 0.0;
+		public double DistanceFitness { get; set; } = 0.0;
 
 		public int CompareTo(WarehousesChromosome other)
 		{
 				return this.Fitness.CompareTo(other.Fitness);
 		}
-
-		//internal void ChangeWarehouseFitness(int index, double oldFitness, double newFitness)
-		//{
-		//	if (warehouses[index].Fitness.Value != oldFitness)
-		//		throw new ArgumentException("Given wrong old fitness value.");
-
-		//	warehouses[index].Fitness = newFitness;
-
-		//	UpdateFitness();
-		//}
 
 		internal void InsertPoint(int warehouseIndex, int carIndex, PointD point)
 		{
@@ -73,7 +53,6 @@ namespace csharp_console
 
 		internal void InitRandomly(ISet<PointD> coords)
 		{
-			//var rand = RandomService.GetInstance();
 			foreach (var coord in coords)
 			{
 				var rand_value = RandomService.NextDouble();
@@ -119,7 +98,6 @@ namespace csharp_console
 				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Time) );
 				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Distance) );
 			}
-			//double[] values = 
 			await Task.WhenAll( warehouseTasks );
 
 			UpdateFitness();
@@ -138,15 +116,6 @@ namespace csharp_console
 				DistanceFitness = values.Sum();
 			}
 		}
-        //async internal Task ComputeFitness()
-        //{
-        //	try{
-        //		await ComputeFitness( Evaluation.EuklidianDistance );
-        //	}
-        //	catch (Exception e) {
-        //		int a = 5;
-        //	}
-        //}
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -156,7 +125,6 @@ namespace csharp_console
 			{
 
 				sb.AppendLine($"{warehouse.Point.X};{warehouse.Point.Y}");
-				//sb.AppendLine( warehouse.CarRoutes.Select(cr => cr.Count > 0 ? 1 : 0).Sum().ToString() );
 				foreach (var cr in warehouse.CarRoutes)
 				{
 					if (cr.Count == 0) continue;
