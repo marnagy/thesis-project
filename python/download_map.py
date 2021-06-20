@@ -8,7 +8,7 @@ def get_args() -> Namespace:
     :rtype: Namespace
     """
     parser = ArgumentParser()
-    parser.add_argument("-p", "--place", type=str, help="Name of place to get map of.", required=True)
+    parser.add_argument("-p", "--place", type=str, help="Name of place to get map of. (Check compatibility on https://www.openstreetmap.org/)", required=True)
     parser.add_argument("-o", "--out_file", default="", type=str, help="Output file name.")
 
     args = parser.parse_args(None)
@@ -38,6 +38,6 @@ if __name__ == "__main__":
     download_map(
         args.place, 
         args.out_file if args.out_file != '' else '{}_map'.format(
-            args.place
+            args.place.lower()
             )
         )

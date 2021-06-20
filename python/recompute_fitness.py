@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from argparse import ArgumentParser, Namespace
 import requests
 
@@ -44,6 +44,7 @@ def recompute(whs: List[Warehouse], type: str) -> float:
         url = url + '/shortest'
         ret_attr = 'meters_distance'
     
+    
     result = 0
     for wh in whs:
         if wh.routes is None:
@@ -62,7 +63,7 @@ def recompute(whs: List[Warehouse], type: str) -> float:
     return result
 
 
-def load_warehouses(filename: str) -> List[Warehouse]:
+def load_warehouses(filename: str) -> Tuple[float, float, List[Warehouse]]:
     '''Loads warehouses from given file.
 
     :param filename: Path to file
@@ -88,8 +89,8 @@ def load_warehouses(filename: str) -> List[Warehouse]:
         if is_fitness_time and (not is_fitness_distance) and (not is_point) and (not is_route):
             fitness_time = double(line)
             is_fitness_time = False
-            #is_fitness_distance = True
-            is_point = True
+            is_fitness_distance = True
+            #is_point = True
             continue
             
         if is_fitness_distance and (not is_fitness_time) and (not is_point) and (not is_route):
@@ -124,12 +125,13 @@ def load_warehouses(filename: str) -> List[Warehouse]:
                 routes = [ points ]
             else:
                 routes.append(points)
-    return warehouses
+    return (fitness_time, fitness_distance, warehouses)
 
 def main():
     args = get_args()
-    sol = load_warehouses(args.file_path)
-    print(recompute(sol, args.type))
+    time_fit, distance_fit, warehouses = load_warehouses(args.file_path)
+    print('Computed: {}'.format( recompute(warehouses, args.type) ) )
+    print('Saved: {}'.format( time_fit if args.type == 'time' else distance_fit ) )
 
 if __name__ == '__main__':
     main()

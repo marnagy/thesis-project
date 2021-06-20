@@ -231,6 +231,7 @@ def main():
     graph = ox.add_edge_travel_times(graph)
     print()
 
+    # pipe mode
     if args.file_path == "":
         lines = sys.stdin.readlines()
         input_lines = list(map(lambda x: x[:-1], lines))
@@ -253,7 +254,7 @@ def main():
                 print("Illegal solution: No path to node found.")
             finally:
                 print()
-            #os.system("python {} -m {} -f {}".format(__file__, map_file_path, wh_file_name))
+    # standalone mode
     else:
         try:
             filename = args.file_path

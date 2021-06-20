@@ -48,7 +48,6 @@ def main():
         sol_fitness_pairs.append( (sol, fitness_time, fitness_distance) )
     
     sort_index = 1 if args.type == 'time' else 2 # for distance
-    print('Sort index: {}'.format(sort_index))
     sol_fitness_pairs.sort( key=lambda x: x[sort_index] )
     for i in range( min(args.n, len(sol_fitness_pairs)) ):
         print( os.path.join(dir_path, sol_fitness_pairs[i][0]) )

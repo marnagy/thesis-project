@@ -16,6 +16,9 @@ from argparse import ArgumentParser, Namespace
 # custom datatypes
 from data import Point, Warehouse
 
+distance_penalty = 10_000
+time_penalty = 10_000
+
 def get_args() -> Namespace:
     parser = ArgumentParser()
     parser.add_argument("-m", "--map_path", type=str, help="Path of map file (graphml file).", required=True)
@@ -119,7 +122,7 @@ class Distance(Resource):
             }
         except:
             return {
-                'meters_distance': 10_000
+                'meters_distance': distance_penalty
             }
 
 class TravelTime(Resource):
@@ -154,7 +157,7 @@ class TravelTime(Resource):
             }
         except:
             return {
-                'travel_time': 10_000
+                'travel_time': time_penalty
             }
 
 if __name__ == '__main__':

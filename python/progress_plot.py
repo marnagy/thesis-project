@@ -27,12 +27,13 @@ def double(text: str) -> float:
     return float(text.replace(',', '.')) if type(text) == str else text
 
 def convert(x):
-    print("doing: {}".format(x))
     return double(x) if ',' in x else int(x)
 
 def main():
     args = get_args()
     type = args.type
+
+    print('Loading data...')
     df = pd.concat( [pd.read_csv(f, sep=';') for f in glob.glob( os.path.join(
             args.dir_path, 'result_*_{}.csv'.format(type)
         ) ) ], ignore_index=True)
@@ -44,10 +45,12 @@ def main():
     df['min'] = df['min'].apply(double)
     df['max'] = df['max'].apply(double)
 
+    print('Plotting...')
     ax = sns.lineplot(x='gen', y='min', data=df, color='r')
     ax = sns.lineplot(x='gen', y='avg', data=df, ax=ax, color='g')
     ax = sns.lineplot(x='gen', y='max', data=df, ax=ax, color='b')
 
+    print('Setting plot stuff...')
     ax.legend(['Min', 'Avg', 'Max'])
     ax.set_xlabel('Generations')
     ax.set_ylabel('Time (seconds)' if type == 'time' else 'Distance (meters)')
@@ -55,6 +58,7 @@ def main():
     out_file_name = os.path.join(args.dir_path, 'progress_plot')
 
     if args.mode == 'show':
+        print('Showing...')
         plt.show()
     else:
         out_filename = '{}.{}'.format( out_file_name, out_format )
