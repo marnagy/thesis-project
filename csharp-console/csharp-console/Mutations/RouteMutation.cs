@@ -12,7 +12,6 @@ namespace csharp_console.Mutations
 	{
 		public async static Task Swap(WarehousesChromosome whc)
 		{
-			//var rand = RandomService.GetInstance();
 			Warehouse wh = whc.warehouses[RandomService.Next(whc.warehouses.Length)];
 			List<PointD> route = wh.CarRoutes[ RandomService.Next(wh.CarsAmount) ];
 			int length = route.Count;
@@ -39,8 +38,6 @@ namespace csharp_console.Mutations
 				}
 			}
 			int index2 = availableIndices[ RandomService.Next(availableIndices.Length) ];
-			// while (index1 == index2)
-			// 	index2 = rand.Next(length);
 
 			{
 				PointD temp = route[index1];
@@ -50,14 +47,11 @@ namespace csharp_console.Mutations
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
 			double newDistanceFitness = oldDistanceFitness;
-			//if (WarehousesChromosome.Mode == Mode.Distance)
 			newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
-			//whc.UpdateFitness();
 			if ( WarehousesChromosome.Mode == Mode.Time && newTimeFitness <= oldTimeFitness ||
 				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
 			{
 				whc.UpdateFitness();
-				//whc. Fitness = whc.Fitness.Value - oldFitness + newFitness;
 				return;
 			}
 			else
@@ -71,9 +65,6 @@ namespace csharp_console.Mutations
 				wh.ReturnFitness(oldTimeFitness, Mode.Time);
 				wh.ReturnFitness(oldDistanceFitness, Mode.Distance);
 			}
-
-
-			//await whc.ComputeFitness();
 		}
 	}
 }

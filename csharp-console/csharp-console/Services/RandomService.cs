@@ -6,21 +6,22 @@ using System.Threading.Tasks;
 
 namespace csharp_console.Services
 {
+	/// <summary>
+	/// Thread-safe implementation of Random service
+	/// </summary>
 	public static class RandomService
 	{
 		private static Random rand;
+
+		static RandomService()
+		{
+			rand = new Random();
+		}
+
 		public static void SetSeed(int seed)
 		{
 			rand = new Random(seed);
 		}
-		//public static Random GetInstance()
-		//{
-		//	if (rand == null)
-		//	{
-		//		rand = new Random();
-		//	}
-		//	return rand;
-		//}
 		public static int Next()
 		{
 			lock (rand)

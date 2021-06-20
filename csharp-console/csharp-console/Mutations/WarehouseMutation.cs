@@ -13,7 +13,6 @@ namespace csharp_console.Mutations
 		private static double sigma = 0.005;
 		public async static Task NormalMove(WarehousesChromosome whc)
 		{
-			//Random rand = RandomService.GetInstance();
 			int whIndex = RandomService.Next(whc.warehouses.Length);
 			Warehouse wh = whc.warehouses[whIndex];
 			
@@ -35,10 +34,7 @@ namespace csharp_console.Mutations
 			wh.Point = newPoint;
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
-			double newDistanceFitness = oldDistanceFitness;
-			//if (WarehousesChromosome.Mode == Mode.Distance)
-			newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
-			//whc.UpdateFitness();
+			double newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
 			if ( WarehousesChromosome.Mode == Mode.Time    && newTimeFitness <= oldTimeFitness ||
 				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
 			{
@@ -50,11 +46,7 @@ namespace csharp_console.Mutations
 				wh.Point = oldPoint;
 				wh.ReturnFitness(oldTimeFitness, Mode.Time);
 				wh.ReturnFitness(oldDistanceFitness, Mode.Distance);
-				//wh.Fitness = oldFitness;
 			}
-			//else
-			//	succesfulUpdateCounter += 1;
-			//counter += 1;
 		}
 	}
 }

@@ -9,6 +9,6 @@ namespace csharp_console
 	public enum Mode
 	{
 		Time = 1,
-		Distance
+		Distance = 2
 	}
 }
