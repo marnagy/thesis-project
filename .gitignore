@@ -6,13 +6,12 @@
 /python/*.osm
 /python/__pycache__
 /python/ors_key.txt
-/*.py
-/addresses.py
 
 # C#
 /csharp-console/.vs
 /csharp-console/csharp-console/bin
 /csharp-console/csharp-console/obj
+/csharp-console/csharp-console/Properties
 # ignore XML docs generated on running with the Release configuration
 /csharp-console/csharp-console/csharp-console.xml
 
