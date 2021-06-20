@@ -18,29 +18,29 @@ namespace csharp_console
 {
 	public class Program
 	{
-		public static Random rand = new Random();
+		//public static Random rand = new Random();
 		static Func<int, string> logFile = (i) => $"result_{i}.log";
 		static Func<int, string> csvTimeFile = (i) => $"result_{i}_time.csv";
 		static Func<int, string> csvDistanceFile = (i) => $"result_{i}_distance.csv";
 		static Func<int,string> outFile = (i) => $"result_{i}.wh";
-		//static int stepSize = 5;
 		public static void Main(string[] args)
 		{
-			string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\gps_coords.txt";
-			string defaultOutDir = "csharp_results";
+			// string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\gps_coords.txt";
+			// string defaultOutDir = "csharp_results";
 			const string defaultLineSeparator = ";";
 			const Mode defaultMode = Mode.Time;
 			Config config;
 
 			string lineSeparator = defaultLineSeparator;
-			string source = defaultSource;
-			string OutDir = defaultOutDir;
+			string source = string.Empty; //defaultSource;
+			string OutDir = string.Empty; //defaultOutDir;
 			Mode mode = defaultMode;
-			string configFile = "..\\..\\..\\..\\..\\config.json";
+			string configFile = string.Empty; //"..\\..\\..\\..\\..\\config.json";
 
 			if (args.Length < 3)
 			{
-				Console.WriteLine($"You need to give at least 3 arguments:\nsource file, output directory, configuration file, seed [int] (optional), mode [1=Time,2=Distance] (optional)");
+				Console.WriteLine($"You need to give at least 3 arguments:");
+				Console.WriteLine("source file, output directory, configuration file, seed [int] (optional), mode [1=Time(default),2=Distance] (optional), use cache [0=no cache, 1=use cache(default)]");
 				return;
 			}
 
@@ -69,14 +69,18 @@ namespace csharp_console
 				// set config file
 				configFile = args[2];
 				// file check
-				if ( !File.Exists(configFile) )
+				try
+				{
+					// load evolutionary algorithm constants
+					config = Config.FromJson(configFile);
+				}
+				catch (FileNotFoundException)
 				{
 					Console.WriteLine("Config file does not exist");
 					return;
 				}
 				Console.WriteLine($"Set config file to {configFile}");
-				// load evolutionary algorithm constants
-				config = Config.FromJson(configFile);
+				
 				CheckConfiguration(config);
 				Evaluation.StartManaging(locks: config.MaxParallelRequests);
 				ThreadPool.SetMaxThreads(config.MaxParallelRequests, config.MaxParallelRequests);
@@ -109,16 +113,35 @@ namespace csharp_console
 				// set mode
 				if (args.Length >= 5)
 				{
-					if ( int.TryParse(args[4], out int modeNum) && ( modeNum >= 1 && modeNum <= 2 ) )
+					if ( int.TryParse(args[4], out int modeNum) && ( modeNum >= 1 && modeNum <= Enum.GetNames( typeof(Mode) ).Length ) )
 					{
 						mode = (Mode)modeNum;
 						System.Console.WriteLine($"Mode set to {mode}.");
 					}
 					else
 					{
-						Console.WriteLine("Mode integer is not valid.");
+						Console.WriteLine("Mode integer is not valid or does not fit given range.");
 						return;
 					}
+				}
+				// set mode in classes
+				WarehousesChromosome.Mode = mode;
+			}
+
+			{
+				// set mode
+				if (args.Length >= 6)
+				{
+					if ( int.TryParse(args[5], out int cacheNum) )
+					{
+						if (cacheNum == 0)
+						{
+							Warehouse.SetCache(false);
+						}
+						Console.WriteLine("UseCache set to 'false'");
+					}
+					else
+						Console.WriteLine("UseCache set to 'true'");
 				}
 				// set mode in classes
 				WarehousesChromosome.Mode = mode;
@@ -130,11 +153,6 @@ namespace csharp_console
 
 			foreach (var line in File.ReadLines(source))
 			{
-				// skip line containing amount of points
-				// if ( int.TryParse(line, out _) )
-				// {
-				// 	continue;
-				// }
 				lineParts = line.Split(lineSeparator);
 				coords.Add( new PointD(
 					double.Parse(lineParts[0].Replace('.', ',')), 
@@ -161,7 +179,6 @@ namespace csharp_console
 
 			for (int i = 0; i < config.Runs; i++)
 			{
-				//results.Add(
 				lastPopulation = GeneticAlgorithm(
 						coords,
 						lowerLeft,
@@ -188,13 +205,10 @@ namespace csharp_console
 				Console.WriteLine($"Program created file {outFilePath}\n");
 
 			}
-
-			//SendEmail(emailAddress, password);
 		}
 
 		private static void CheckConfiguration(Config config)
 		{
-			//Console.WriteLine(config.ToString());
 			if ( !(config.RouteMutProb >= 0 && config.RouteMutProb <= 1) )
 			{
 				Console.WriteLine("Illegal RouteMutProb. Needs to be in interval [0,1]. Please check config file.", Console.Error);
@@ -221,28 +235,9 @@ namespace csharp_console
 				System.Environment.Exit(0);
 			}
 		}
-		// private static void SendEmail(MailAddress address, SecureString password)
-		// {
-		// 	var smtp = new SmtpClient
-		// 	{
-		// 		Host = "smtp.gmail.com",
-		// 		Port = 587,
-		// 		EnableSsl = true,
-		// 		DeliveryMethod = SmtpDeliveryMethod.Network,
-		// 		UseDefaultCredentials = false,
-		// 		Credentials = new NetworkCredential(address.Address, password)
-		// 	};
-		// 	using (var message = new MailMessage(address, address)
-		// 	{
-		// 		Subject = "Program ended",
-		// 		Body = $"Your program has ended at {DateTime.Now}."
-		// 	})
-		// 	{
-		// 		smtp.Send(message);
-		// 	}
-		// }
 
-		static IList<WarehousesChromosome> InitPopulation(PointD lower_left, PointD higher_right, int amount, int warehouses_amount, int[] cars_amount, ISet<PointD> coords)
+		static IList<WarehousesChromosome> InitPopulation(PointD lower_left, PointD higher_right,
+			int amount, int warehouses_amount, int[] cars_amount, ISet<PointD> coords)
 		{
 			WarehousesChromosome[] result = new WarehousesChromosome[amount];
 			for (int i = 0; i < amount; i++)
@@ -276,7 +271,8 @@ namespace csharp_console
 				};
 
 				IList<WarehousesChromosome> lastPopulation = RunGA(
-					lowerLeft, higherRight, populationAmount,
+					lowerLeft, higherRight,
+					populationAmount,
 					warehousesAmount, carsAmount, coords,
 					maxGenerations,
 					AddLog,
@@ -324,7 +320,8 @@ namespace csharp_console
 						Console.WriteLine($"{mode}:\tgen: {gen}:\tstd: {Math.Round(std, 2)}\tmin: {Math.Round(min, 2)}\tavg: {Math.Round(average, 2)}\tmax: {Math.Round(max, 2)}");
 		}
 		static IList<WarehousesChromosome> RunGA(
-			PointD lowerLeft, PointD higherRight, int populationAmount,
+			PointD lowerLeft, PointD higherRight,
+			int populationAmount,
 			int warehousesAmount, int[] carsAmount, ISet<PointD> coords,
 			int maxGenerations,
 			Action<int, IList<WarehousesChromosome>> addLog,
@@ -336,8 +333,6 @@ namespace csharp_console
 			var population = InitPopulation(
 				lowerLeft, higherRight, populationAmount,
 				warehousesAmount, carsAmount, coords);
-
-			//ISet<Task> computation = new HashSet<Task>();
 
 			// compute fitness
 			Compute(population, fitness);
@@ -369,41 +364,26 @@ namespace csharp_console
 		}
 		private static void Compute(IList<WarehousesChromosome> population, Func<WarehousesChromosome, Task> func, double probability)
 		{
-			//ISet<Thread> computations = new HashSet<Thread>(capacity: population.Count);
-			//for (int i = stepSize; i < population.Count + stepSize; i += stepSize)
-
-			// do stuff?
-			//System.Console.WriteLine($"PopSize: {population.Count}");
 			bool[] flags = population
-				.Select(_ => rand.NextDouble() < probability )
+				.Select(_ => RandomService.NextDouble() < probability )
 				.ToArray();
 			int parThreads = flags.Where(f => f).Count();
-			//System.Console.WriteLine($"Executing {parThreads} threads");
 			using (CountdownEvent evt = new CountdownEvent( parThreads ))
 			{
 				for (int index = 0; index < population.Count; index++)
 				{
-					//computations.Clear();
-					//for (int j = 0; j < stepSize; j++)
-					//{
-					//	int index = i - stepSize + j;
 					if ( flags[index] )
 					{
 						int i = index;
 						ThreadPool.QueueUserWorkItem( async _ => 
 						{
 							await func(population[i]);
-							//Console.WriteLine($"Index: {i}");
 							evt.Signal();
 						});
 					}
-						//computations.Add( func(population[index]) );
-					//}
 				}
 				evt.Wait();
 			}
-					
-			//await Task.WhenAll(computations);
 		}
 		public static void WritePopulation(IList<WarehousesChromosome> population)
 		{
