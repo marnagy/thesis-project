@@ -64,17 +64,6 @@ namespace csharp_console
 			CarRoutes[carIndex].Add(coord);
 		}
 
-		//async internal Task<double> ComputeDistanceAndSave()
-		//{
-		//	double timeResult = await ComputeFitness(Mode.Time);
-		//	TimeFitness = timeResult;
-
-		//	double distanceResult = await ComputeFitness(Mode.Distance);
-		//	DistanceFitness = distanceResult;
-
-		//	return Warehouse.Mode == Mode.Time ? TimeFitness : DistanceFitness;
-		//}
-
 		async internal Task<double> ComputeDistanceAndSave(Mode mode)
 		{
 
@@ -100,7 +89,6 @@ namespace csharp_console
 				);
 			}
 			double[] values = await Task.WhenAll( computation );
-			//double result = WarehousesChromosome.Mode == Mode.Time ? values.Max() : values.Sum();
 			double result = mode == Mode.Time ? values.Max() : values.Sum();
 			return result;
 		}

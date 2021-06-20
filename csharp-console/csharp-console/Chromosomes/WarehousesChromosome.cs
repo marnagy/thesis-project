@@ -56,7 +56,6 @@ namespace csharp_console
 			foreach (var coord in coords)
 			{
 				var rand_value = RandomService.NextDouble();
-				//var val = 1d / warehouses.Length;
 
 				// calculate probabilities
 				double[] distances = new double[warehouses.Length];
