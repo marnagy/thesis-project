@@ -13,6 +13,7 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Threading;
 using csharp_console.Services;
+using csharp_console.Graph;
 
 namespace csharp_console
 {
@@ -35,12 +36,16 @@ namespace csharp_console
 			string source = string.Empty; //defaultSource;
 			string OutDir = string.Empty; //defaultOutDir;
 			Mode mode = defaultMode;
+			EvaluationMode evalMode = EvaluationMode.Server;
+			string graphFilePath = string.Empty;
+			int graphFileMove = 0;
 			string configFile = string.Empty; //"..\\..\\..\\..\\..\\config.json";
 
 			if (args.Length < 3)
 			{
 				Console.WriteLine($"You need to give at least 3 arguments:");
-				Console.WriteLine("source file, output directory, configuration file, seed [int] (optional), mode [1=Time(default),2=Distance] (optional), use cache [0=no cache, 1=use cache(default)]");
+				Console.Write("source file, output directory, configuration file, evaluation mode [0=Local(default),1=Server-based] (optional), map JSON file if Local was chosen, ");
+				Console.WriteLine("seed [int] (optional), mode [1=Time(default),2=Distance] (optional), use cache [0=no cache, 1=use cache(default)] (optional)");
 				return;
 			}
 
@@ -93,13 +98,44 @@ namespace csharp_console
 			}
 
 			{
-				// set seed
-				if ( args.Length >= 4 )
+				// set evaluation mode
+				if (args.Length >= 4)
 				{
-					if ( int.TryParse(args[3], out int seed) )
+					if ( int.TryParse(args[3], out int evalModeNum) && evalMode >= 0 && evalModeNum < Enum.GetNames( typeof(EvaluationMode) ).Length)
+					{
+						evalMode = (EvaluationMode)evalModeNum;
+						Evaluation.SetEvaluationMode(evalMode);
+						if (evalModeNum == 0) // Local
+						{
+
+							if (args.Length >= 5)
+							{
+								graphFilePath = args[4];
+								if ( !File.Exists(graphFilePath) )
+								{
+									Console.WriteLine($"There is no file on path {graphFilePath}.");
+									return;
+								}
+								graphFileMove = 1;
+							}
+						}
+					}
+					else
+					{
+						Console.WriteLine("Evaluation mode integer is not valid or does not fit given range.");
+						return;
+					}
+				}
+			}
+
+			{
+				// set seed
+				if ( args.Length >= 5 + graphFileMove )
+				{
+					if ( int.TryParse(args[4 + graphFileMove], out int seed) )
 					{
 						RandomService.SetSeed(seed);
-						System.Console.WriteLine($"Seed set to {seed}.");
+						Console.WriteLine($"Seed set to {seed}.");
 					}
 					else
 					{
@@ -111,9 +147,9 @@ namespace csharp_console
 
 			{
 				// set mode
-				if (args.Length >= 5)
+				if (args.Length >= 6 + graphFileMove)
 				{
-					if ( int.TryParse(args[4], out int modeNum) && ( modeNum >= 1 && modeNum <= Enum.GetNames( typeof(Mode) ).Length ) )
+					if ( int.TryParse(args[5 + graphFileMove], out int modeNum) && ( modeNum >= 1 && modeNum <= Enum.GetNames( typeof(Mode) ).Length ) )
 					{
 						mode = (Mode)modeNum;
 						System.Console.WriteLine($"Mode set to {mode}.");
@@ -130,9 +166,9 @@ namespace csharp_console
 
 			{
 				// set mode
-				if (args.Length >= 6)
+				if (args.Length >= 7 + graphFileMove)
 				{
-					if ( int.TryParse(args[5], out int cacheNum) )
+					if ( int.TryParse(args[6 + graphFileMove], out int cacheNum) )
 					{
 						if (cacheNum == 0)
 						{
@@ -164,6 +200,11 @@ namespace csharp_console
 				Console.WriteLine("No coordinates found.");
 				return;
 			}
+
+			// load map graph
+			var g = JsonConvert.DeserializeObject<MapGraph>( File.ReadAllText(graphFilePath) );
+			ReadOnlyGraph graph = g.ToReadOnly();
+			Evaluation.SetMapGraph(graph);
 
 			// set corner values
 			PointD lowerLeft = new PointD(

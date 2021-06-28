@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Threading;
 using System.Collections.Concurrent;
+using csharp_console.Graph;
 
 namespace csharp_console
 {
@@ -15,7 +16,9 @@ namespace csharp_console
 	{
 		public static readonly HttpClient client;
 		public static string baseAddress { get; set; }
-		private static Semaphore _semaphore;
+		static Semaphore _semaphore;
+		static EvaluationMode EvalMode;
+		static ReadOnlyGraph MapGraph;
 
 		static Evaluation()
 		{
@@ -26,6 +29,14 @@ namespace csharp_console
 		{
 			//_pool = new Semaphore(locks, locks*2);
 			_semaphore = new Semaphore(locks, locks);
+		}
+		public static void SetEvaluationMode(EvaluationMode mode)
+		{
+			EvalMode = mode;
+		}
+		public static void SetMapGraph(ReadOnlyGraph mapGraph)
+		{
+			MapGraph = mapGraph;
 		}
 
 		private static double Request(string uri, string jsonArgument)
@@ -93,6 +104,18 @@ namespace csharp_console
 		}
 		public static double MapDistance(PointD p1, PointD p2, Mode mode)
 		{
+
+			if (Evaluation.EvalMode == EvaluationMode.Local)
+			{
+				return MapLocal(p1, p2, mode);
+			}
+			else
+			{
+				return MapFromServer(p1, p2, mode);
+			}
+		}
+		private static double MapFromServer(PointD p1, PointD p2, Mode mode)
+		{
 			string uri = null;
 			string argument = null;
 			if (mode == Mode.Distance)
@@ -111,6 +134,10 @@ namespace csharp_console
 			_semaphore.Release();
 
 			return result;
+		}
+		private static double MapLocal(PointD p1, PointD p2, Mode mode)
+		{
+			return MapGraph.AStar(p1, p2, mode == Mode.Distance ? "length" : "travel_time");
 		}
 	}
 }

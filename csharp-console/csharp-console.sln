@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "csharp-console", "csharp-console\csharp-console.csproj", "{060385E9-2987-4C1A-B564-249FB71E3A34}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeapTest", "HeapTest\HeapTest.csproj", "{2A3A2330-9E16-4C31-AC5D-3C5E6867C233}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapJsonLoadTest", "MapJsonLoadTest\MapJsonLoadTest.csproj", "{932534BB-800A-42E0-8463-6D6DE0377F8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{060385E9-2987-4C1A-B564-249FB71E3A34}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{060385E9-2987-4C1A-B564-249FB71E3A34}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{060385E9-2987-4C1A-B564-249FB71E3A34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A3A2330-9E16-4C31-AC5D-3C5E6867C233}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A3A2330-9E16-4C31-AC5D-3C5E6867C233}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A3A2330-9E16-4C31-AC5D-3C5E6867C233}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A3A2330-9E16-4C31-AC5D-3C5E6867C233}.Release|Any CPU.Build.0 = Release|Any CPU
+		{932534BB-800A-42E0-8463-6D6DE0377F8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{932534BB-800A-42E0-8463-6D6DE0377F8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{932534BB-800A-42E0-8463-6D6DE0377F8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{932534BB-800A-42E0-8463-6D6DE0377F8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
