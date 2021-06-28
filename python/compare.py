@@ -26,6 +26,10 @@ def get_args() -> Namespace:
     return args
 
 def double(text) -> float:
+    if text == '∞':
+        return float('inf')
+    if text == '-∞':
+        return float('-inf')
     return float(text.replace(',', '.')) if type(text) == str else text
 
 def main():
@@ -76,8 +80,8 @@ def main():
     legend = ['BaseMin', 'BaseAvg', 'AlgMin', 'AlgAvg']
     #legend = ['Base Min', 'Alg Min']
 
-    #title = 'Base:{} Alg:{}'.format(args.base, args.alg)
-    title = 'Base:{} Alg:{}'.format('distance-based', 'time-based')
+    title = 'Base:{} Alg:{}'.format(args.base, args.alg)
+    #title = 'Base:{} Alg:{}'.format('distance-based', 'time-based')
     #title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.4, 0.6, 0.8)
     #title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.3, 0.5, 0.7)
     if alg2_df is not None:

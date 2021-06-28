@@ -24,6 +24,10 @@ def get_args() -> Namespace:
 
 def double(text: str) -> float:
     #print('Converting {}...'.format(text))
+    if text == '∞':
+        return float('inf')
+    if text == '-∞':
+        return float('-inf')
     return float(text.replace(',', '.')) if type(text) == str else text
 
 def convert(x):
