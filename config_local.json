@@ -1,0 +1,11 @@
+﻿{
+  "WarehousesAmount": 4,
+  "CarsAmount": [
+	  2,2,2,2
+  ],
+  "NGEN": 1000,
+  "WarehouseMutProb": 0.6,
+  "PointWarehouseMutProb": 0.7,
+  "RouteMutProb": 0.6,
+  "MaxParallelRequests": 10
+}
