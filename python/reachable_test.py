@@ -7,6 +7,7 @@ import networkx as nx
 from typing import List, Tuple
 from argparse import ArgumentParser, Namespace
 from data import Warehouse, Point
+from tqdm import tqdm
 #from collections import List
 
 # print("Loading map data...")
@@ -96,7 +97,9 @@ def check_reachability(coords: List[Tuple[float, float]]) -> Tuple[bool, Tuple[f
     success = True
     problem_point = None
 
-    for point1, point2 in [ (coords[i], coords[i+1]) for i in range(-1, len(coords) - 1)]:
+    point_pairs = [ (coords[i], coords[i+1]) for i in range(-1, len(coords) - 1)]
+
+    for point1, point2 in tqdm(point_pairs, ascii=True):
         try:
             _ = get_route(point1, point2, 'length')
         except nx.NetworkXNoPath:
@@ -111,12 +114,14 @@ def main():
     #print("Args: {}".format(args))
     map_file_path = args.map_path
 
-    print("Loading map data...")
+    print('Loading map data...')
     graph = ox.load_graphml(map_file_path)
+    print('Map loaded.')
 
     filename = args.file_path
-    print("Loading from file {}".format(filename))
+    print('Loading from file {}'.format(filename))
     coordinates = load_coordinates(filename)
+    print('Coordinates loaded.')
 
     success, problem_point = check_reachability(coordinates)
     if success:

@@ -2,13 +2,19 @@ import requests
 import json
 import os
 from sys import stdin
+from tqdm import tqdm
 
 headers = {
     'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
 }
+
+ors_key_file = "ors_key.txt"
 ors_key = None
-assert "ors_key.txt" in os.listdir()
-with open("ors_key.txt", "r") as kf:
+if ors_key_file not in os.listdir():
+    print(f'Missing file {ors_key_file} in current directory {os.getcwd()}')
+    exit()
+
+with open(ors_key_file, "r") as kf:
 	ors_key = kf.readline()
 
 def get_coords(addr: str):
@@ -17,9 +23,11 @@ def get_coords(addr: str):
     json_obj = json.loads(resp.text)
     return json_obj["features"][0]["geometry"]["coordinates"]
 
-adresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
+addresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
 
-coordinates = [ get_coords(addr) for addr in adresses ]
+coordinates = list()
+for addr in tqdm(addresses, ascii=True):
+    coordinates.append( get_coords(addr) )
 
 for coord in coordinates:
     print( "{};{}".format(coord[1], coord[0]) )

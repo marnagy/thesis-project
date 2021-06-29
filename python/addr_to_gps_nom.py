@@ -1,17 +1,14 @@
 from geopy.geocoders import Nominatim
 from sys import stdin
+from tqdm import tqdm
 
-adresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
+addresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
 
 nom = Nominatim(user_agent="test_app")
-coordinates = list(
-    map(
-        lambda x: (x.latitude, x.longitude),
-        map(
-            nom.geocode, adresses
-            )
-        )
-    )
+coordinates = list()
+for addr in tqdm(addresses, ascii=True):
+    geopoint = nom.geocode(addr)
+    coordinates.append( (geopoint.latitude, geopoint.longitude) )
 
 for code in coordinates:
     print("{};{}".format(code[0], code[1]))
