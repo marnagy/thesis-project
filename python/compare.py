@@ -26,6 +26,7 @@ def get_args() -> Namespace:
     return args
 
 def double(text) -> float:
+    # special cases for infinity
     if text == '∞':
         return float('inf')
     if text == '-∞':

@@ -234,31 +234,25 @@ def main():
     # pipe mode
     if args.file_path == "":
         lines = sys.stdin.readlines()
-        input_lines = list(map(lambda x: x[:-1], lines))
+        input_lines = list(map(lambda x: x.strip('\n'), lines))
         filter_f = lambda x: x.endswith('.wh') and os.path.exists(x)
         input_lines = list(filter(filter_f, input_lines))
         if len(input_lines) == 0:
             raise Exception("Invalid input. It does not contain ")
-        #print("Input_lines: {}".format(input_lines))
+
         for wh_file_name in input_lines:
-            # wh_file_name = input_lines[i]
-            # if wh_file_name.endswith('.wh') and os.path.exists(wh_file_name):
-                # out_file_name = args.out_file
-                # out_split = out_file_name.split('.')
-                # out_file_name = "{}_{}.{}".format( '.'.join(out_split[-1]), i, out_split[-1] )
             try:
                 print("Loading from file {}".format(wh_file_name))
                 warehouses = load_warehouses(wh_file_name)
                 save_routes(warehouses, wh_file_name, args.extension)
             except nx.NetworkXNoPath:
-                print("Illegal solution: No path to node found.")
+                print("Illegal solution {}: No path to node found.".format(wh_file_name))
             finally:
                 print()
     # standalone mode
     else:
+        filename = args.file_path
         try:
-            filename = args.file_path
-            #for filename in files:
             if not (filename.endswith('.wh') and os.path.exists(filename)):
                 print("Illegal file path.")
                 return
@@ -266,7 +260,7 @@ def main():
             warehouses = load_warehouses(filename)
             save_routes(warehouses, filename, args.extension)
         except nx.NetworkXNoPath as e:
-            print("Illegal solution: No path to node found.")
+            print("Illegal solution {}: No path to node found.".format(filename))
         finally:
             print()
 
