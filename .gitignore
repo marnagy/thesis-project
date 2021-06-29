@@ -23,6 +23,7 @@
 /test_jihocesky*
 /test_prague*
 /test_test*
+/test_local*
 
 /[0-9]*/result_visualization
 
