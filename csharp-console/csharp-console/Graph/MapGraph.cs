@@ -17,15 +17,32 @@ namespace csharp_console
 		public ReadOnlyGraph ToReadOnly()
 		{
 			var nodes = new List<ReadOnlyNode>(Nodes.Length);
+			var edges = new Dictionary<ulong, HashSet<ReadOnlyEdge>>(nodes.Count);
+			var emptySet = new HashSet<ReadOnlyEdge>();
+
+			foreach (var edge in Edges)
+			{
+				if (edges.TryGetValue(edge.StartNodeId, out HashSet<ReadOnlyEdge> set))
+				{
+					set.Add( new ReadOnlyEdge(edge) );
+				}
+				else
+				{
+					var h = new HashSet<ReadOnlyEdge>
+					{
+						new ReadOnlyEdge(edge)
+					};
+					edges.Add(edge.StartNodeId, h);
+				}
+			}
+
 			foreach (var node in Nodes)
 			{
 				nodes.Add(
 					new ReadOnlyNode(
 						node.Id,
 						new PointD(node.Latitude, node.Longitude),
-						Edges.Where(e => e.StartNodeId == node.Id)
-							.Select(e => new ReadOnlyEdge(e))
-							.ToHashSet()
+						edges.ContainsKey(node.Id) ? edges[node.Id] : emptySet
 					)
 				);
 			}

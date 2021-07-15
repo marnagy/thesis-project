@@ -16,9 +16,11 @@ namespace csharp_console.Graph
 		{
 			StartNodeId = e.StartNodeId;
 			EndNodeId = e.EndNodeId;
-			var w = new Dictionary<string, double>(2);
-			w.Add("length", e.Length);
-			w.Add("travel_time", e.TravelTime);
+			var w = new Dictionary<string, double>(2)
+			{
+				{ "length", e.Length },
+				{ "travel_time", e.TravelTime }
+			};
 			Weights = w;
 		}
 	}

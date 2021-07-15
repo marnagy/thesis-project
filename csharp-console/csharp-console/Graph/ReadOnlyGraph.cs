@@ -29,22 +29,14 @@ namespace csharp_console.Graph
 			var activeEdges = new Heap<(double edgeValue, double edgeWeightValue, ReadOnlyEdge edge)>(
 				(e1, e2) => Math.Sign(e1.edgeValue - e2.edgeValue)
 			);
-
-			//Console.WriteLine($"Start node has {startNode.OutEdges.Count} outgoing edges.");
-			//Console.WriteLine($"End node has {endNode.OutEdges.Count} outgoing edges.");
-
-			//Console.WriteLine("Adding first edges...");
 			foreach (var outEdge in startNode.OutEdges)
 			{
-				//Console.WriteLine("Adding edge...");
 				var w = outEdge.Weights[weight];
 				activeEdges.Add( ( w + Distance(outEdge.EndNodeId, endNode.Id), w, outEdge) ) ;
 			}
 
-			//Console.WriteLine($"Heap size: {activeEdges.Count}");
 			while ( activeEdges.Count > 0)
 			{
-				//Console.WriteLine($"Active edge count: {activeEdges.Count}");
 				(double edgeValue, double edgeWeightValue, ReadOnlyEdge e) = activeEdges.Get();
 
 				if ( visitedIds.Contains( e.EndNodeId ) )
@@ -62,6 +54,47 @@ namespace csharp_console.Graph
 					{
 						var w = edge.Weights[weight] + edgeWeightValue;
 						activeEdges.Add( (w + Distance(edge.EndNodeId, endNode.Id), w, edge) );
+					}
+				}
+
+			}
+			return double.PositiveInfinity;
+		}
+
+		public double Dijkstra(PointD p1, PointD p2, string weight)
+		{
+			var startNode = MapToClosest(p1);
+			var endNode = MapToClosest(p2);
+
+			var visitedIds = new HashSet<ulong>();
+			var activeEdges = new Heap<(double edgeWeightValue, ReadOnlyEdge edge)>(
+				(e1, e2) => Math.Sign(e1.edgeWeightValue - e2.edgeWeightValue)
+			);
+			foreach (var outEdge in startNode.OutEdges)
+			{
+				var w = outEdge.Weights[weight];
+				activeEdges.Add( (w, outEdge) ) ;
+			}
+
+			while ( activeEdges.Count > 0)
+			{
+				(double edgeWeightValue, ReadOnlyEdge e) = activeEdges.Get();
+
+				if ( visitedIds.Contains( e.EndNodeId ) )
+					continue;
+
+				if (e.EndNodeId == endNode.Id)
+					return edgeWeightValue;
+
+				var node = Nodes[e.EndNodeId];
+				visitedIds.Add(node.Id);
+
+				foreach (var edge in node.OutEdges)
+				{
+					if ( !visitedIds.Contains( edge.EndNodeId ))
+					{
+						var w = edge.Weights[weight] + edgeWeightValue;
+						activeEdges.Add( (w, edge) );
 					}
 				}
 
