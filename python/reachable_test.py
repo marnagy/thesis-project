@@ -6,15 +6,6 @@ import osmnx as ox
 import networkx as nx
 from typing import List, Tuple
 from argparse import ArgumentParser, Namespace
-from data import Warehouse, Point
-#from collections import List
-
-# print("Loading map data...")
-# ox.config(use_cache=True)
-# graph = ox.graph_from_xml("prague_map.osm")
-# print("Adding speeds to edges...")
-# graph = ox.add_edge_speeds(graph)
-# graph = ox.add_edge_travel_times(graph)
 
 RESULTS_DIR_NAME = "result_visualization"
 counter = 0
@@ -29,16 +20,6 @@ def double(number: str) -> float:
     :rtype: float
     '''
     return float(number.replace(',', '.'))
-
-# def validate(filename: str) -> bool:
-#     '''[summary]
-
-#     :param filename: [description]
-#     :type filename: str
-#     :return: [description]
-#     :rtype: bool
-#     '''
-#     return len(filename) > 0 and re.match("^result_[0-9]+\.txt$", filename) is not None
 
 def get_args() -> Namespace:
     parser = ArgumentParser()
@@ -111,12 +92,12 @@ def main():
     #print("Args: {}".format(args))
     map_file_path = args.map_path
 
-    print("Loading map data...")
-    graph = ox.load_graphml(map_file_path)
-
     filename = args.file_path
     print("Loading from file {}".format(filename))
     coordinates = load_coordinates(filename)
+
+    print("Loading map data...")
+    graph = ox.load_graphml(map_file_path)
 
     success, problem_point = check_reachability(coordinates)
     if success:

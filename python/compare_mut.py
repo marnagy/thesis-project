@@ -8,28 +8,36 @@ from argparse import ArgumentParser, Namespace
 
 def get_args() -> Namespace:
     parser = ArgumentParser()
-    parser.add_argument("-b", "--base", type=str, help="Directory of Base algorithm", required=True)
-    parser.add_argument("-a", "--alg", type=str, help="Directory of algorithm to compare to the Base", required=True)
-    parser.add_argument("-a2", "--alg2", type=str, help="Directory of algorithm to compare to the Base", required=True)
+    parser.add_argument("-n", "--name", type=str, help="Name of the mutation [routemut, whmut, pointwhmut]", required=True)
+    parser.add_argument("-l", "--low", type=str, help="Directory of Base algorithm", required=True)
+    parser.add_argument("-b", "--base", type=str, help="Directory of algorithm to compare to the Base", required=True)
+    parser.add_argument("-h", "--high", type=str, help="Directory of algorithm to compare to the Base", required=True)
     parser.add_argument("-t", "--type", default="time", type=str, help="Options: [time, distance]. Default is time.")
     parser.add_argument("-f", "--format", default='pdf', type=str, help="Available format to save [any matplotlib compatible format]. Default is pdf.")
-    parser.add_argument("-m", "--mode", default='save', type=str, help="Available modes [save, show]. Default is save.")
+    parser.add_argument("-m", "--mode", default='show', type=str, help="Available modes [save, show]. Default is save.")
 
     args = parser.parse_args(None)
-
+    if args.name not in ['routemut', 'whmut', 'pointwhmut']:
+        raise Exception('Illegal name "{}". Please use one of [routemut, whmut, pointwhmut]'.format(args.name))
     if args.type not in ['time', 'distance']:
-        raise Exception('Illegal type "{}"'.format(args.type))
+        raise Exception('Illegal type "{}". Please use one of [time, distance]'.format(args.type))
     if args.format not in ['pdf', 'png']:
-        raise Exception('Illegal format "{}"'.format(args.format))
+        raise Exception('Illegal format "{}". Please use one of [pdf, png]'.format(args.format))
     if args.mode not in ['save', 'show']:
-        raise Exception('Illegal mode "{}"'.format(args.format))
+        raise Exception('Illegal mode "{}". Please use one of [save, show]'.format(args.format))
     return args
 
 def double(text) -> float:
     return float(text.replace(',', '.')) if type(text) == str else text
 
 def main():
-    args = get_args()
+    args = None
+    try:
+        args = get_args()
+    except Exception as e:
+        print(e)
+        return
+
     print("'Base' = {}".format(args.base))
     print("'Alg' = {}".format(args.alg))
     if args.alg2 is not None:
@@ -37,7 +45,7 @@ def main():
     print("'Type' = {}".format(args.type))
     print("'Format' = {}".format(args.format))
 
-    mut_name = 'pointwhmut'
+    mut_name = args.name
 
     print("Loading files...")
     base_df = pd.concat( [pd.read_csv(f, sep=';') for f in glob.glob( os.path.join(args.base, 'result_*_{}.csv'.format(args.type)) ) ], ignore_index=True)
@@ -67,19 +75,17 @@ def main():
 
     print("Plotting min...")
     ax = sns.lineplot(x='gen', y='min', data=base_df, color='r', ci='sd')
-    #ax = sns.lineplot(x='gen', y='avg', data=base_df, ax=ax, color='g', ci='sd')
-    #ax = sns.lineplot(x='gen', y='avg', data=base_df, color='g', ci='sd')
     ax = sns.lineplot(x='gen', y='min', data=alg_df, ax=ax, color='b', ci='sd')
-    #ax = sns.lineplot(x='gen', y='avg', data=alg_df, ax=ax, color='y', ci='sd')
     if alg2_df is not None:
         ax = sns.lineplot(x='gen', y='min', data=alg2_df, ax=ax, color='m', ci='sd')
-        #ax = sns.lineplot(x='gen', y='avg', data=alg2_df, ax=ax, color='k', ci='sd')
 
     legend = ['BaseMin', 'AlgMin']
     #legend = ['Base Min', 'Alg Min']
 
-    title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.4, 0.6, 0.8)
-    #title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.3, 0.5, 0.7)
+    title = 'Base: {}, Alg: {}, Alg2: {}'.format(
+        0.3 if mut_name == 'pointwhmut' else 0.4,
+        0.5 if mut_name == 'pointwhmut' else 0.6,
+        0.7 if mut_name == 'pointwhmut' else 0.8)
 
     if alg2_df is not None:
         legend += ['Alg2Min']
@@ -94,8 +100,7 @@ def main():
     if args.mode == 'show':
         plt.show()
     elif args.mode == 'save':
-        #out_file_name = '{}_0.4_0.6_0.8'.format(f'{mut_name}prob_min')
-        out_file_name = '{}_0.3_0.5_0.7'.format(f'{mut_name}prob_min')
+        out_file_name = f'{mut_name}prob_min_' + ('0.3_0.5_0.7' if mut_name == 'pointwhmut' else '0.4_0.6_0.8' )
         out_file_name = 'comparison-{}_{}.{}'.format(out_file_name, args.type, args.format)
 
         plt.savefig( out_file_name )
@@ -111,8 +116,10 @@ def main():
     legend = ['BaseAvg', 'AlgAvg']
     #legend = ['Base Min', 'Alg Min']
 
-    title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.4, 0.6, 0.8)
-    #title = 'Base: {}, Alg: {}, Alg2: {}'.format(0.3, 0.5, 0.7)
+    title = 'Base: {}, Alg: {}, Alg2: {}'.format(
+        0.3 if mut_name == 'pointwhmut' else 0.4,
+        0.5 if mut_name == 'pointwhmut' else 0.6,
+        0.7 if mut_name == 'pointwhmut' else 0.8)
 
     if alg2_df is not None:
         legend += ['Alg2Avg']
@@ -127,8 +134,7 @@ def main():
     if args.mode == 'show':
         plt.show()
     elif args.mode == 'save':
-        #out_file_name = '{}_0.4_0.6_0.8'.format(f'{mut_name}prob_avg')
-        out_file_name = '{}_0.3_0.5_0.7'.format(f'{mut_name}prob_avg')
+        out_file_name = f'{mut_name}prob_avg_' + ('0.3_0.5_0.7' if mut_name == 'pointwhmut' else '0.4_0.6_0.8' )
         out_file_name = 'comparison-{}_{}.{}'.format(out_file_name, args.type, args.format)
 
         plt.savefig( out_file_name )
