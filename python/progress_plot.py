@@ -23,7 +23,6 @@ def get_args() -> Namespace:
     return args
 
 def double(text: str) -> float:
-    #print('Converting {}...'.format(text))
     return float(text.replace(',', '.')) if type(text) == str else text
 
 def convert(x):

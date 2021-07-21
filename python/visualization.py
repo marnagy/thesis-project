@@ -1,20 +1,11 @@
 import os
 import sys
-from types import TracebackType
 import matplotlib.pyplot as plt
 import osmnx as ox
 import networkx as nx
 from typing import List
 from argparse import ArgumentParser, Namespace
 from data import Warehouse, Point
-#from collections import List
-
-# print("Loading map data...")
-# ox.config(use_cache=True)
-# graph = ox.graph_from_xml("prague_map.osm")
-# print("Adding speeds to edges...")
-# graph = ox.add_edge_speeds(graph)
-# graph = ox.add_edge_travel_times(graph)
 
 RESULTS_DIR_NAME = "result_visualization"
 counter = 0
@@ -29,16 +20,6 @@ def double(number: str) -> float:
     :rtype: float
     '''
     return float(number.replace(',', '.'))
-
-# def validate(filename: str) -> bool:
-#     '''[summary]
-
-#     :param filename: [description]
-#     :type filename: str
-#     :return: [description]
-#     :rtype: bool
-#     '''
-#     return len(filename) > 0 and re.match("^result_[0-9]+\.txt$", filename) is not None
 
 def get_args() -> Namespace:
     parser = ArgumentParser()
@@ -58,8 +39,7 @@ def load_warehouses(filename: str) -> List[Warehouse]:
     :return: Loaded Warehouses of solution
     :rtype: List[Warehouse]
     '''
-    warehouses = []
-    json_obj = {}
+    warehouses = list()
     lines = None
     with open(filename, mode="r") as in_file:
         lines = list(map(lambda x: x.strip(), in_file.readlines()))
@@ -98,12 +78,10 @@ def load_warehouses(filename: str) -> List[Warehouse]:
         if is_route and not is_point:
             if line == "###":
                 wh = Warehouse(wh_point)
-                #print("Routes:")
                 for route in routes:
                     wh.add_route( route )
                 wh.add_fitness(fitness_time, fitness_distance)
-                routes = []
-                fitness = None
+                routes = list()
                 warehouses.append( wh )
                 is_point = True
                 is_route = False
@@ -161,15 +139,10 @@ def save_routes(warehouses: List[Warehouse], filename: str, out_ext: str):
     }
     orig_dir = os.sep.join( filename.split(os.sep)[:-1] )
     filename = filename.split(os.sep)[-1]
-    #wh_points = []
     for wh in warehouses:
-        #print("Routes amount: {}".format( len(wh.routes) ))
         if wh.routes is None:
             continue
         for route in wh.routes:
-        # for i in range(len(wh.routes)):
-        #     #print("i: {}".format(i))
-        #     route = wh.routes[i]
             points = [wh.point] + route
             for p1, p2 in [ (points[i], points[i+1]) for i in range(-1, len(points) - 1)]:
                 graph_route = get_route(p1, p2, "traveltime")
@@ -182,7 +155,6 @@ def save_routes(warehouses: List[Warehouse], filename: str, out_ext: str):
                 else:
                     routes_dict['colors'].append( plot_colors[counter % len(plot_colors)] )
             counter += 1
-    #print("Amount of routes: {}".format(len(routes_dict['routes'])))
     figure_filename = "{}_map.{}".format(filename.split('.')[0], out_ext)
     print("Creating plot from {} ...".format(filename))
     res_file_path = os.path.join(orig_dir, RESULTS_DIR_NAME, figure_filename)
@@ -195,15 +167,13 @@ def save_routes(warehouses: List[Warehouse], filename: str, out_ext: str):
     
     print("Saving to {}".format(res_file_path))
 
-    fig, ax = ox.plot_graph_routes(
+    _, _ = ox.plot_graph_routes(
         graph,
         figsize=(100, 100),
         dpi=100,
         route_colors=routes_dict['colors'],
         routes=routes_dict['routes'],
-        #route_linewidth=10,
         route_alpha=0.5,
-        #node_size=30,
         edge_linewidth=1,
         # make route points more visible
         orig_dest_size=500,
@@ -220,7 +190,6 @@ def main():
         Expects at least one argument: Path to file with solution.
     '''
     args = get_args()
-    #print("Args: {}".format(args))
     map_file_path = args.map_path
 
     print("Loading map data...")
@@ -239,13 +208,7 @@ def main():
         input_lines = list(filter(filter_f, input_lines))
         if len(input_lines) == 0:
             raise Exception("Invalid input. It does not contain ")
-        #print("Input_lines: {}".format(input_lines))
         for wh_file_name in input_lines:
-            # wh_file_name = input_lines[i]
-            # if wh_file_name.endswith('.wh') and os.path.exists(wh_file_name):
-                # out_file_name = args.out_file
-                # out_split = out_file_name.split('.')
-                # out_file_name = "{}_{}.{}".format( '.'.join(out_split[-1]), i, out_split[-1] )
             try:
                 print("Loading from file {}".format(wh_file_name))
                 warehouses = load_warehouses(wh_file_name)
@@ -258,7 +221,6 @@ def main():
     else:
         try:
             filename = args.file_path
-            #for filename in files:
             if not (filename.endswith('.wh') and os.path.exists(filename)):
                 print("Illegal file path.")
                 return

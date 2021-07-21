@@ -1,10 +1,11 @@
 from geopy.geocoders import Nominatim
 from sys import stdin
 
-adresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
+def main():
+    adresses = list(filter(lambda x: len(x) > 0, stdin.readlines()))
 
-nom = Nominatim(user_agent="test_app")
-coordinates = list(
+    nom = Nominatim(user_agent="test_app")
+    coordinates = list(
     map(
         lambda x: (x.latitude, x.longitude),
         map(
@@ -13,5 +14,8 @@ coordinates = list(
         )
     )
 
-for code in coordinates:
-    print("{};{}".format(code[0], code[1]))
+    for code in coordinates:
+        print("{};{}".format(code[0], code[1]))
+
+if __name__ == '__main__':
+    main()

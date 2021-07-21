@@ -26,9 +26,11 @@ def main():
     dir_path = args.dir_path
     if not os.path.exists(dir_path):
         sys.stderr.write("Given argument doesn't exist.\n")
+        return
     
     if not os.path.isdir(dir_path):
         sys.stderr.write("Given argument is not a directory.\n")
+        return
     
     files = os.listdir(dir_path)
     wh_files = list(filter(lambda x: x.endswith('.wh') , files))

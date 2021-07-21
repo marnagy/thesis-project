@@ -21,19 +21,17 @@ def download_map(place_name: str, out_filename: str):
     :type place_name: str
     """
     print("Downloading...")
-    graph = ox.graph_from_place(place_name,
-        network_type='drive'
-        #simplify=False,
-        #clean_periphery=True,
-        )
+    graph = ox.graph_from_place(place_name, network_type='drive')
+
     print("Adding speed to edges...")
     graph = ox.add_edge_speeds(graph)
     graph = ox.add_edge_travel_times(graph)
+
     print("Saving...")
     ox.save_graphml(graph, filepath="{}.graphml".format(out_filename) )
     print("Graph saved.")
 
-if __name__ == "__main__":
+def main():
     args = get_args()
     download_map(
         args.place, 
@@ -41,3 +39,7 @@ if __name__ == "__main__":
             args.place.lower()
             )
         )
+
+
+if __name__ == "__main__":
+    main()

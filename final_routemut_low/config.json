@@ -1,0 +1,16 @@
+{
+  "WarehousesAmount": 2,
+  "CarsAmount": [
+    2,
+    2
+  ],
+  "NGen": 100,
+  "PopulationSize": 10,
+  "WarehouseMutProb": 0.6,
+  "PointWarehouseMutProb": 0.5,
+  "RouteMutProb": 0.4,
+  "Runs": 10,
+  "MaxParallelRequests": 10,
+  "ServerHost": "localhost",
+  "ServerPort": 5002
+}

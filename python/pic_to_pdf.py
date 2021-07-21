@@ -1,3 +1,6 @@
+### THIS SCRIPT IS USED FOR GENERATING FILES FOR THESIS ###
+### THIS SCRIPT IS NOT PART OF THE THESIS ITSELF        ###
+
 from PIL import Image
 from argparse import Namespace, ArgumentParser
 

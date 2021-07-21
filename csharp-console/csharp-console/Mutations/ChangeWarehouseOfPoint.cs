@@ -68,7 +68,6 @@ namespace csharp_console.Mutations
 				WarehousesChromosome.Mode == Mode.Distance && fromNewDistanceFitness + toNewDistanceFitness < fromOldDistanceFitness + toOldDistanceFitness )
 			{
 				whc.UpdateFitness();
-				return;
 			}
 			else
 			{
@@ -93,8 +92,7 @@ namespace csharp_console.Mutations
 
 		private static int GetRouteIndexTo(Warehouse whTo)
 		{
-			// maybe prefer routes with closer points?
-			// random for now
+			// random for now, maybe prefer routes with closer points in future work
 			return RandomService.Next(whTo.CarRoutes.Length);
 		}
 

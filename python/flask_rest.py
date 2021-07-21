@@ -1,20 +1,11 @@
-# if __name__ != "__main__":
-#     print("This file should NOT be used as module.")
-#     exit()
-
-#print("Loading modules...")
-from flask import Flask, jsonify, request
-from flask_restful import Resource, Api, reqparse
-from typing import List
-from datetime import datetime
+from flask import Flask
+from flask_restful import Resource, Api
 from math import sqrt
 import osmnx as ox
-import os
-import sys
 from argparse import ArgumentParser, Namespace
 
 # custom datatypes
-from data import Point, Warehouse
+from data import Point
 
 distance_penalty = 10_000
 time_penalty = 10_000
@@ -151,7 +142,6 @@ class TravelTime(Resource):
             times = ox.utils_graph.get_route_edge_attributes(graph, node_path,
                 attribute='travel_time')
             time = sum(times)
-            #print("Time needed: {}".format(time) )
             return {
                 'travel_time': time
             }
@@ -167,7 +157,6 @@ if __name__ == '__main__':
     print("Loading map data...")
     ox.config(use_cache=True)
     graph = ox.load_graphml(map_filename)
-    #graph = ox.graph_from_xml(map_filename)
     print("Adding speeds to edges...")
     graph = ox.add_edge_speeds(graph)
     graph = ox.add_edge_travel_times(graph)

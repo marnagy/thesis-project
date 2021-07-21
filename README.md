@@ -2,7 +2,7 @@
 
 - client program uses Evolutionary Strategies (ES) to find the best solution
 - client runs serveral times and saves best solution from each run to output directory
-- 
+
 ## Mutations
 ### Route mutation
 - swaps 2 points on a random route of length at least 2 of a random warehouse
@@ -19,7 +19,6 @@
 # How to run
 
 ## REST API part
-- move to directory 'python'
 - start REST API
 - after running the client part, interrupt program using Ctrl+C
 
@@ -27,7 +26,6 @@
 - move to directory 'csharp-console'
 - start project 'csharp-console' using dotnet (use Release configuration for max performance)
 - this program will write stats about each generation to output
-- [WIP] configuration from file?, hard-coded values for now
 - saves solution for each run to output directory with extension '.wh'
 
 ## Visualization part
@@ -38,39 +36,37 @@
 ## Requirements
 - dotnet or runtime that can run C# 8.0+ (tested using dotnet)
 - python 3.9+
-- installed python modules listed in 'required.txt' in 'rest' directory
-
+- conda environment installed
+- installed python modules listed in 'conda_required.txt' in 'python' directory using conda (more instruction on how to create the environment in the file itself)
 
 
 ## csharp-console directory
 
-- expects server listening on 'http://localhost:5000'
-- Stores solution of C# client implementation using asynchronous programming for maximum speed
+- Stores solution of C# client implementation using multi-threading with semaphores to have full control of requests amount
 - designed for communicate with 'flask_rest.py' from 'rest' directory (getting distance/time)
-- [WIP] outputs to directory "csharp_results" using full path
 - implements Evolutionary algorithm using Evolutionary Strategies
 
 ## python directory
 
-- Stores scripts that use osmnx module
+- Stores python scripts that use osmnx module among others
 
-- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed (Prague) map (download_map.py)
-
-### flask_rest.py
-
-- expects 'prague.osm' and 'visualization.py' files in current directory
-
-### visualization.py
-
-- expects 'prague.osm' file in current directory
+- This includes: Flask REST API (flask_rest.py), script for visualization of computed result (visualization.py) and script for downloading needed map (download_map.py) and more
 
 ### download_map.py
 
 - used to download map and save in current directory
-- [WIP] hard-coded to download Prague map
 - saves map to current directory to file 'prague.osm'
 
 ### addresses_overpass.py
 
 - get n shops in Prague using: python addresses_overpass.py --amount=n > [output file]
+
 - for generating test input
+
+### Other
+
+- for more details about the scripts, run script with --help flag
+
+## Contact
+
+- in case of further questions about this repository, feel free to contact me on my email: marek.nagy123456@gmail.com

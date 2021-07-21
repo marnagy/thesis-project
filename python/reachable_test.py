@@ -40,26 +40,25 @@ def create_json(warehouses):
         'chromosome': list(map(lambda x: x.json(), warehouses))
     }
 
-def get_node(point) -> int:
+def get_node(point: Tuple[float, float]) -> int:
     '''Retrieve closes node on map to the given point.
 
     :param point: Point to find the closest map node to
     :type point: Point
     '''
-    node = ox.get_nearest_node(graph, point=(point[0], point[1]))
+    node = ox.get_nearest_node(graph, point=point)
     return node
 
-def get_route(point1, point2, weight: str) -> List[int]:
+def get_route(point1: Tuple[float, float], point2: Tuple[float, float], weight: str) -> List[int]:
     node1 = get_node(point1)
     node2 = get_node(point2)
-    route = ox.shortest_path(graph, node1, node2,
-                weight=weight)
+    route = ox.shortest_path(graph, node1, node2, weight=weight)
     return route
 
-def parse_coords(line:str) -> Tuple[float, float]:
-        parts = line.split(';')
-        assert len(parts) == 2
-        return tuple(map(lambda x: double(x), parts))
+def parse_coords(line: str) -> Tuple[float, float]:
+    parts = line.split(';')
+    assert len(parts) == 2
+    return tuple(map(lambda x: double(x), parts))
 
 def load_coordinates(filepath: str) -> List[Tuple[float, float]]:
     with open(filepath, 'r') as f:
@@ -89,7 +88,6 @@ def check_reachability(coords: List[Tuple[float, float]]) -> Tuple[bool, Tuple[f
 def main():
     global graph
     args = get_args()
-    #print("Args: {}".format(args))
     map_file_path = args.map_path
 
     filename = args.file_path

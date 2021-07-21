@@ -71,8 +71,7 @@ def load_warehouses(filename: str) -> Tuple[float, float, List[Warehouse]]:
     :return: Loaded Warehouses of solution
     :rtype: List[Warehouse]
     '''
-    warehouses = []
-    json_obj = {}
+    warehouses = list()
     lines = None
     with open(filename, mode="r") as in_file:
         lines = list(map(lambda x: x.strip(), in_file.readlines()))
@@ -84,13 +83,12 @@ def load_warehouses(filename: str) -> Tuple[float, float, List[Warehouse]]:
     wh_point = None
     fitness_time = 0
     fitness_distance = 0
-    routes = None
+    routes = list()
     for line in lines:
         if is_fitness_time and (not is_fitness_distance) and (not is_point) and (not is_route):
             fitness_time = double(line)
             is_fitness_time = False
             is_fitness_distance = True
-            #is_point = True
             continue
             
         if is_fitness_distance and (not is_fitness_time) and (not is_point) and (not is_route):
@@ -109,12 +107,10 @@ def load_warehouses(filename: str) -> Tuple[float, float, List[Warehouse]]:
         if is_route and not is_point:
             if line == "###":
                 wh = Warehouse(wh_point)
-                #print("Routes:")
                 for route in routes:
                     wh.add_route( route )
                 wh.add_fitness(fitness_time, fitness_distance)
-                routes = []
-                fitness = None
+                routes = list()
                 warehouses.append( wh )
                 is_point = True
                 is_route = False
@@ -122,9 +118,9 @@ def load_warehouses(filename: str) -> Tuple[float, float, List[Warehouse]]:
             doubles = list(map(double, line.split(';'))) 
             points = [ Point(d1, d2) for d1, d2 in zip(doubles[::2], doubles[1::2]) ]
             if routes is None:
-                routes = [ points ]
+                routes = list( points )
             else:
-                routes.append(points)
+                routes.append( points )
     return (fitness_time, fitness_distance, warehouses)
 
 def main():

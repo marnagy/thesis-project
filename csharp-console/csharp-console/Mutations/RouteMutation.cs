@@ -46,13 +46,11 @@ namespace csharp_console.Mutations
 			}
 
 			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
-			double newDistanceFitness = oldDistanceFitness;
-			newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
+			double newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
 			if ( WarehousesChromosome.Mode == Mode.Time && newTimeFitness <= oldTimeFitness ||
 				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
 			{
 				whc.UpdateFitness();
-				return;
 			}
 			else
 			{

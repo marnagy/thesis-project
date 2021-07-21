@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 class Point:
     """Stores geographical point."""
@@ -86,16 +86,6 @@ class Warehouse:
         '''
         self.fitness_time = fitness_time
         self.fitness_distance = fitness_distance
-
-    # @staticmethod
-    # def from_json(wh_json):
-    #     #print("Loading JSON from: {}".format(wh_json))
-    #     wh = Warehouse(Point.from_json(wh_json['point']))
-    #     for route in wh_json['routes']:
-    #         #print("Loading route from: {}".format(route))
-    #         r = list(map(lambda x: Point.from_json(x), route))
-    #         wh.add_route(r)
-    #     return wh
 
     def __str__(self) -> str:
         '''Get string representation of Warehouse object.

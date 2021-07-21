@@ -18,24 +18,20 @@ namespace csharp_console
 {
 	public class Program
 	{
-		//public static Random rand = new Random();
-		static Func<int, string> logFile = (i) => $"result_{i}.log";
 		static Func<int, string> csvTimeFile = (i) => $"result_{i}_time.csv";
 		static Func<int, string> csvDistanceFile = (i) => $"result_{i}_distance.csv";
 		static Func<int,string> outFile = (i) => $"result_{i}.wh";
 		public static void Main(string[] args)
 		{
-			// string defaultSource = "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project\\gps_coords.txt";
-			// string defaultOutDir = "csharp_results";
 			const string defaultLineSeparator = ";";
 			const Mode defaultMode = Mode.Time;
 			Config config;
 
 			string lineSeparator = defaultLineSeparator;
-			string source = string.Empty; //defaultSource;
-			string OutDir = string.Empty; //defaultOutDir;
+			string source = string.Empty;
+			string OutDir = string.Empty;
 			Mode mode = defaultMode;
-			string configFile = string.Empty; //"..\\..\\..\\..\\..\\config.json";
+			string configFile = string.Empty;
 
 			if (args.Length < 3)
 			{
@@ -99,7 +95,7 @@ namespace csharp_console
 					if ( int.TryParse(args[3], out int seed) )
 					{
 						RandomService.SetSeed(seed);
-						System.Console.WriteLine($"Seed set to {seed}.");
+						Console.WriteLine($"Seed set to {seed}.");
 					}
 					else
 					{
@@ -116,7 +112,7 @@ namespace csharp_console
 					if ( int.TryParse(args[4], out int modeNum) && ( modeNum >= 1 && modeNum <= Enum.GetNames( typeof(Mode) ).Length ) )
 					{
 						mode = (Mode)modeNum;
-						System.Console.WriteLine($"Mode set to {mode}.");
+						Console.WriteLine($"Mode set to {mode}.");
 					}
 					else
 					{
@@ -340,19 +336,15 @@ namespace csharp_console
 			for (int gen = 0; gen < maxGenerations; gen++)
 			{
 
-				//Console.WriteLine("Logging...");
 				addLog(gen, population);
 
 				// mutation of position of warehouses
-				//Console.WriteLine("Warehouse mutation...");
 				Compute(population, warehouseMutation, warehouseMutProb);
 
-				// mutation of position of warehouses
-				//Console.WriteLine("Point warehouse mutation...");
+				// mutation of point to warehouse mapping
 				Compute(population, pointWarehouseMutation, pointWarehouseMutProb);
 
 				// mutation of routes
-				//Console.WriteLine("Route mutation...");
 				Compute(population, routeMutation, routeMutProb);
 			}
 			addLog(maxGenerations, population);

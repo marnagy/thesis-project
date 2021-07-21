@@ -21,11 +21,13 @@ namespace csharp_console.Services
 		}
 		public static bool TryGetFitness(PointD p1, PointD p2, Mode mode, out double res)
 		{
-			return mode == Mode.Time ? timeDB.TryGetValue((p1, p2), out res) : distanceDB.TryGetValue((p1, p2), out res );
+			return mode == Mode.Time ? timeDB.TryGetValue((p1, p2), out res)
+				: distanceDB.TryGetValue((p1, p2), out res );
 		}
 		public static bool TryAddValue(PointD p1, PointD p2, Mode mode, double value)
 		{
-			return mode == Mode.Time ? timeDB.TryAdd((p1, p2), value) : distanceDB.TryAdd((p1, p2), value);
+			return mode == Mode.Time ? timeDB.TryAdd((p1, p2), value)
+				: distanceDB.TryAdd((p1, p2), value);
 		}
 	}
 }

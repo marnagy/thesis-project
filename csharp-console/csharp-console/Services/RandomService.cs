@@ -12,6 +12,7 @@ namespace csharp_console.Services
 	public static class RandomService
 	{
 		private static Random rand;
+		private static bool seedSet = false;
 
 		static RandomService()
 		{
@@ -20,7 +21,11 @@ namespace csharp_console.Services
 
 		public static void SetSeed(int seed)
 		{
-			rand = new Random(seed);
+			if ( !seedSet )
+			{
+				rand = new Random(seed);
+				seedSet = true;
+			}
 		}
 		public static int Next()
 		{

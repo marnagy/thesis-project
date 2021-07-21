@@ -14,14 +14,6 @@ namespace csharp_console
 
 		// instance variables
 		public readonly Warehouse[] warehouses;
-		private WarehousesChromosome(Warehouse[] warehouses)
-		{
-			this.warehouses = new Warehouse[warehouses.Length];
-			for (int i = 0; i < warehouses.Length; i++)
-			{
-				this.warehouses[i] = warehouses[i].Clone();
-			}
-		}
 		public WarehousesChromosome(int length, PointD lowerLeft, PointD higherRight, int[] carsAmounts)
 		{
 			if (length <= 0 || carsAmounts.Length != length)
@@ -64,8 +56,12 @@ namespace csharp_console
 					var wh = warehouses[i];
 					distances[i] = Evaluation.EuklidianDistance(coord, wh.Point);
 				}
-				var distancesSum = distances.Sum();
-				var probabilities = distances.Select(x => x / distancesSum).ToArray();
+				double[] probabilities = distances.Select(x => 1 / x).ToArray();
+				double probSum = probabilities.Sum();
+				for (int p = 0; p < probabilities.Length; p++)
+				{
+					probabilities[p] = probabilities[p] / probSum;
+				}
 
 				for (int i = 0; i < warehouses.Length; i++)
 				{
