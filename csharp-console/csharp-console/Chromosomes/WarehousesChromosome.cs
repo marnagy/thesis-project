@@ -4,68 +4,36 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using csharp_console.Services;
 
 namespace csharp_console
 {
 	public class WarehousesChromosome : IComparable<WarehousesChromosome>
 	{
-		// static variables
-		private static readonly Random rand;
-		private static readonly HttpClient Client;
-		static WarehousesChromosome()
-		{
-			rand = new Random();
-			Client = new HttpClient();
-			Client.BaseAddress = new Uri("http://localhost:5000");
-		}
+		public static Mode Mode;
 
 		// instance variables
 		public readonly Warehouse[] warehouses;
-		private WarehousesChromosome(Warehouse[] warehouses)
+		public WarehousesChromosome(int length, PointD lowerLeft, PointD higherRight, int[] carsAmounts)
 		{
-			this.warehouses = new Warehouse[warehouses.Length];
-			for (int i = 0; i < warehouses.Length; i++)
-			{
-				this.warehouses[i] = warehouses[i].Clone();
-			}
-		}
-		public WarehousesChromosome(int length, PointD lower_left, PointD higher_right, int[] cars_amounts)
-		{
-			if (length <= 0 || cars_amounts.Length != length)
+			if (length <= 0 || carsAmounts.Length != length)
 				throw new Exception("Wrong amount of warehouses or cars.");
 
 			// create warehouses
 			warehouses = new Warehouse[length];
 			for (int i = 0; i < length; i++)
 			{
-				warehouses[i] = Warehouse.Random(lower_left, higher_right, cars_amounts[i]);
+				warehouses[i] = Warehouse.Random(lowerLeft, higherRight, carsAmounts[i]);
 			}
 		}
-		public double Fitness { get; set; } = -1;
-
-		public int Length { get; set; }
-
-		public WarehousesChromosome Clone()
-		{
-			var whc = new WarehousesChromosome(warehouses.Select(wh => wh.Clone()).ToArray());
-			whc.Fitness = this.Fitness;
-			return whc;
-		}
+		public double Fitness { get => WarehousesChromosome.Mode == Mode.Time ? TimeFitness : DistanceFitness; }
+		public double TimeFitness { get; set; } = 0.0;
+		public double DistanceFitness { get; set; } = 0.0;
 
 		public int CompareTo(WarehousesChromosome other)
 		{
 				return this.Fitness.CompareTo(other.Fitness);
 		}
-
-		//internal void ChangeWarehouseFitness(int index, double oldFitness, double newFitness)
-		//{
-		//	if (warehouses[index].Fitness.Value != oldFitness)
-		//		throw new ArgumentException("Given wrong old fitness value.");
-
-		//	warehouses[index].Fitness = newFitness;
-
-		//	UpdateFitness();
-		//}
 
 		internal void InsertPoint(int warehouseIndex, int carIndex, PointD point)
 		{
@@ -79,8 +47,7 @@ namespace csharp_console
 		{
 			foreach (var coord in coords)
 			{
-				var rand_value = rand.NextDouble();
-				//var val = 1d / warehouses.Length;
+				var rand_value = RandomService.NextDouble();
 
 				// calculate probabilities
 				double[] distances = new double[warehouses.Length];
@@ -89,8 +56,12 @@ namespace csharp_console
 					var wh = warehouses[i];
 					distances[i] = Evaluation.EuklidianDistance(coord, wh.Point);
 				}
-				var distancesSum = distances.Sum();
-				var probabilities = distances.Select(x => x / distancesSum).ToArray();
+				double[] probabilities = distances.Select(x => 1 / x).ToArray();
+				double probSum = probabilities.Sum();
+				for (int p = 0; p < probabilities.Length; p++)
+				{
+					probabilities[p] = probabilities[p] / probSum;
+				}
 
 				for (int i = 0; i < warehouses.Length; i++)
 				{
@@ -98,7 +69,7 @@ namespace csharp_console
 					{
 						if (rand_value < probabilities[i])
 						{
-							warehouses[i].InsertToCar(rand.Next(warehouses[i].CarsAmount), coord);
+							warehouses[i].InsertToCar(RandomService.Next(warehouses[i].CarsAmount), coord);
 							break;
 						}
 						else
@@ -108,7 +79,7 @@ namespace csharp_console
 					}
 					else
 					{
-						warehouses[i].InsertToCar(rand.Next(warehouses[i].CarsAmount), coord);
+						warehouses[i].InsertToCar(RandomService.Next(warehouses[i].CarsAmount), coord);
 					}
 				}
 			}
@@ -119,36 +90,36 @@ namespace csharp_console
 			List<Task<double>> warehouseTasks = new List<Task<double>>();
 			foreach (var warehouse in warehouses)
 			{
-				warehouseTasks.Add( warehouse.ComputeDistanceAndSave() );
+				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Time) );
+				warehouseTasks.Add( warehouse.ComputeDistanceAndSave(Mode.Distance) );
 			}
-			//double[] values = 
 			await Task.WhenAll( warehouseTasks );
 
 			UpdateFitness();
 		}
 		internal void UpdateFitness()
 		{
-			double[] values = warehouses.Select(wh => wh.Fitness).ToArray();
-			Fitness = values.Max();
+			// Time part
+			{
+				var values = warehouses.Select(wh => wh.TimeFitness);
+				TimeFitness = values.Max();
+			}
+
+			// Distance part
+			{
+				var values = warehouses.Select(wh => wh.DistanceFitness);
+				DistanceFitness = values.Sum();
+			}
 		}
-        //async internal Task ComputeFitness()
-        //{
-        //	try{
-        //		await ComputeFitness( Evaluation.EuklidianDistance );
-        //	}
-        //	catch (Exception e) {
-        //		int a = 5;
-        //	}
-        //}
         public override string ToString()
         {
             var sb = new StringBuilder();
-			sb.AppendLine(this.Fitness.ToString());
+			sb.AppendLine(TimeFitness.ToString());
+			sb.AppendLine(DistanceFitness.ToString());
 			foreach (var warehouse in this.warehouses)
 			{
 
 				sb.AppendLine($"{warehouse.Point.X};{warehouse.Point.Y}");
-				//sb.AppendLine( warehouse.CarRoutes.Select(cr => cr.Count > 0 ? 1 : 0).Sum().ToString() );
 				foreach (var cr in warehouse.CarRoutes)
 				{
 					if (cr.Count == 0) continue;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,12 +9,12 @@ namespace csharp_console.Mutations
 {
 	class ChangeWarehouseOfPoint
 	{
-		private static readonly Random rand = new Random();
 		public async static Task SimpleChange(WarehousesChromosome whc)
 		{
-			if (whc.warehouses.Length == 1) return;
+			if (whc.warehouses.Length == 1 && whc.warehouses[0].CarRoutes.Length == 1) return;
 
-			double oldFitness = whc.Fitness;
+			double oldTimeFitness = whc.TimeFitness;
+			double oldDistanceFitness = whc.DistanceFitness;
 
 			List<int> nonEmptyWHIndices = new List<int>();
 			for (int i = 0; i < whc.warehouses.Length; i++)
@@ -25,28 +26,31 @@ namespace csharp_console.Mutations
 				}
 			}
 
-			// if (nonEmptyWHIndices.Count < 2)
-			// 	return;
-
-			int fromWHIndex = rand.Next(nonEmptyWHIndices.Count);
-			var whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
-			var whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
-			while ( whFrom == whTo )
+			int fromWHIndex = RandomService.Next(nonEmptyWHIndices.Count);
+			Warehouse whFrom = whc.warehouses[nonEmptyWHIndices[fromWHIndex]];
+			Warehouse whTo;
+			double fromOldTimeFitness;
+			double fromOldDistanceFitness;
+			double toOldTimeFitness;
+			double toOldDistanceFitness;
+			int routeIndexFrom;
+			int routeIndexTo;
+			do
 			{
-				whTo = whc.warehouses[ rand.Next( whc.warehouses.Length ) ];
-			}
-			//nonEmptyWHIndices.Clear();
-			double fromOldFitness = whFrom.Fitness;
-			double toOldFitness = whTo.Fitness;
+				// allow adding to warehouses with all empty routes
+				whTo = whc.warehouses[ RandomService.Next( whc.warehouses.Length ) ];
 
-			double whFromOldFitness = whFrom.Fitness;
-			double whToOldFitness = whTo.Fitness;
+				fromOldTimeFitness = whFrom.TimeFitness;
+				fromOldDistanceFitness = whFrom.DistanceFitness;
+				toOldTimeFitness = whTo.TimeFitness;
+				toOldDistanceFitness = whTo.DistanceFitness;
 
-			int routeIndexFrom = GetRouteIndexFrom(whFrom);
-			int routeIndexTo = GetRouteIndexTo(whTo);
+				routeIndexFrom = GetRouteIndexFrom(whFrom);
+				routeIndexTo = GetRouteIndexTo(whTo);				
+			} while (whFrom == whTo && routeIndexFrom == routeIndexTo);
 
-			int pointIndexFrom = rand.Next(whFrom.CarRoutes[routeIndexFrom].Count);
-			int pointIndexTo = rand.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
+			int pointIndexFrom = RandomService.Next(whFrom.CarRoutes[routeIndexFrom].Count);
+			int pointIndexTo = RandomService.Next(whTo.CarRoutes[routeIndexTo].Count + 1);
 
 			{
 				PointD point = whFrom.CarRoutes[routeIndexFrom][pointIndexFrom];
@@ -54,15 +58,16 @@ namespace csharp_console.Mutations
 				whTo.CarRoutes[routeIndexTo].Insert(pointIndexTo, point);
 			}
 
-			double fromNewFitness = await whFrom.ComputeDistanceAndSave();
-			double toNewFitness = await whTo.ComputeDistanceAndSave();
-			//whc.UpdateFitness();
-			if ( Max(fromNewFitness, toNewFitness) < Max(fromOldFitness, toOldFitness) )
+			double fromNewTimeFitness = await whFrom.ComputeDistanceAndSave(Mode.Time);
+			double toNewTimeFitness = await whTo.ComputeDistanceAndSave(Mode.Time);
+
+			double fromNewDistanceFitness = await whFrom.ComputeDistanceAndSave(Mode.Distance);
+			double toNewDistanceFitness = await whTo.ComputeDistanceAndSave(Mode.Distance);
+
+			if ( WarehousesChromosome.Mode == Mode.Time && Max(fromNewTimeFitness, toNewTimeFitness) < Max(fromOldTimeFitness, toOldTimeFitness) ||
+				WarehousesChromosome.Mode == Mode.Distance && fromNewDistanceFitness + toNewDistanceFitness < fromOldDistanceFitness + toOldDistanceFitness )
 			{
 				whc.UpdateFitness();
-				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromOldFitness, fromNewFitness);
-				//whc.ChangeWarehouseFitness(index: toWHIndex, toOldFitness, toNewFitness);
-				return;
 			}
 			else
 			{
@@ -71,11 +76,10 @@ namespace csharp_console.Mutations
 				whTo.CarRoutes[routeIndexTo].RemoveAt(pointIndexTo);
 				whFrom.CarRoutes[routeIndexFrom].Insert(pointIndexFrom, point);
 
-				whTo.Fitness = toOldFitness;
-				whFrom.Fitness = fromOldFitness;
-
-				//whc.ChangeWarehouseFitness(index: fromWHIndex, fromNewFitness, toOldFitness);
-				//whc.ChangeWarehouseFitness(index: toWHIndex, toNewFitness, fromOldFitness);
+				whTo.ReturnFitness(toOldTimeFitness, Mode.Time);
+				whTo.ReturnFitness(toOldDistanceFitness, Mode.Distance);
+				whFrom.ReturnFitness(fromOldTimeFitness, Mode.Time);
+				whFrom.ReturnFitness(fromOldDistanceFitness, Mode.Distance);
 			}
 		}
 		private static double Max(double d1, double d2)
@@ -88,9 +92,8 @@ namespace csharp_console.Mutations
 
 		private static int GetRouteIndexTo(Warehouse whTo)
 		{
-			// maybe prefer routes with closer points?
-			// random for now
-			return rand.Next(whTo.CarRoutes.Length);
+			// random for now, maybe prefer routes with closer points in future work
+			return RandomService.Next(whTo.CarRoutes.Length);
 		}
 
 		private static int GetRouteIndexFrom(Warehouse whFrom)
@@ -101,7 +104,7 @@ namespace csharp_console.Mutations
 				if (whFrom.CarRoutes[i].Count > 0)
 					indices.Add(i);
 			}
-			return indices[rand.Next(indices.Count)];
+			return indices[RandomService.Next(indices.Count)];
 		}
 	}
 }

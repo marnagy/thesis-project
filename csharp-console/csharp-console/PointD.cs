@@ -18,5 +18,12 @@ namespace csharp_console
 		{
 			return $"{X.ToString().Replace(',','.')}:{Y.ToString().Replace(',','.')}";
 		}
+		public double[] ToArray()
+		{
+			var res = new double[2];
+			res[0] = X;
+			res[1] = Y;
+			return res;
+		}
 	}
 }

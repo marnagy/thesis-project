@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "csharp-console": {
+      "commandName": "Project",
+      "commandLineArgs": "test_inputs\\4_points.txt test_4_points_base config.json 42 2",
+      "workingDirectory": "C:\\Users\\mnagy\\Documents\\Matfyz\\Semestral_project\\Semestral-project"
+    }
+  }
+}

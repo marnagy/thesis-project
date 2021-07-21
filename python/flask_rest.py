@@ -1,22 +1,22 @@
-# if __name__ != "__main__":
-#     print("This file should NOT be used as module.")
-#     exit()
-
-#print("Loading modules...")
-from flask import Flask, jsonify, request
-from flask_restful import Resource, Api, reqparse
-from typing import List
-from datetime import datetime
+from flask import Flask
+from flask_restful import Resource, Api
 from math import sqrt
 import osmnx as ox
-import os
-import sys
+from argparse import ArgumentParser, Namespace
 
 # custom datatypes
-from visualization import Point, Warehouse
+from data import Point
 
+distance_penalty = 10_000
+time_penalty = 10_000
 
-#print("Adding API paths...")
+def get_args() -> Namespace:
+    parser = ArgumentParser()
+    parser.add_argument("-m", "--map_path", type=str, help="Path of map file (graphml file).", required=True)
+    parser.add_argument("-p", "--port", default=5000, type=int, help="Port number.")
+
+    args = parser.parse_args(None)
+    return args
 
 class HelloWorld(Resource):
     """Hello world docstring"""
@@ -102,14 +102,19 @@ class Distance(Resource):
         '''
         start_node = get_node( Point(start_lat, start_lon) )
         dest_node = get_node( Point(dest_lat, dest_lon) )
-        node_path = ox.shortest_path(graph, start_node, dest_node,
-            weight='length')
-        distances = ox.utils_graph.get_route_edge_attributes(graph, node_path,
-            attribute='length')
-        distance = sum(distances)        
-        return {
-            'meters_distance': distance
-        }
+        try:
+            node_path = ox.shortest_path(graph, start_node, dest_node,
+                weight='length')
+            distances = ox.utils_graph.get_route_edge_attributes(graph, node_path,
+                attribute='length')
+            distance = sum(distances)        
+            return {
+                'meters_distance': distance
+            }
+        except:
+            return {
+                'meters_distance': distance_penalty
+            }
 
 class TravelTime(Resource):
     '''
@@ -137,22 +142,21 @@ class TravelTime(Resource):
             times = ox.utils_graph.get_route_edge_attributes(graph, node_path,
                 attribute='travel_time')
             time = sum(times)
-            #print("Time needed: {}".format(time) )
             return {
                 'travel_time': time
             }
         except:
             return {
-                'travel_time': 10_000
+                'travel_time': time_penalty
             }
 
 if __name__ == '__main__':
-    args = sys.argv[1:]
-    map_filename = args[0]
+    args = get_args()
+    map_filename = args.map_path
 
     print("Loading map data...")
     ox.config(use_cache=True)
-    graph = ox.graph_from_xml(map_filename)
+    graph = ox.load_graphml(map_filename)
     print("Adding speeds to edges...")
     graph = ox.add_edge_speeds(graph)
     graph = ox.add_edge_travel_times(graph)
@@ -162,11 +166,13 @@ if __name__ == '__main__':
 
     # Add endpoints
     api.add_resource(HelloWorld, '/')
-    #api.add_resource(DateTime, '/datetime')
     api.add_resource(Distance, '/shortest/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
     api.add_resource(TravelTime, '/traveltime/<float:start_lat>:<float:start_lon>;<float:dest_lat>:<float:dest_lon>')
-    #api.add_resource(Path, '/path')
-    #api.add_resource(FinalGraph, '/graph')
 
-    app.run(host='0.0.0.0', port=5_000, debug=True, threaded=True)
-    #app.run(port=5_000, debug=True)
+    # Should work according to the werkzeug docs (Flask is built on top of the werkzeug module)
+    # Not supported on Windows (all testing was done on Windows)
+    # Should theoretically improve performance of the server
+    #app.run(host='0.0.0.0', port=args.port, threaded=False, processes=4)
+
+    # multithreaded but on 1 core
+    app.run(host='0.0.0.0', port=args.port, threaded=True)

@@ -6,20 +6,12 @@ using System.Threading.Tasks;
 
 namespace csharp_console
 {
-	/// <summary>
-	/// Class for statistics methods needed for logs.
-	/// </summary>
 	public static class Statistics
 	{
-		/// <summary>
-		/// Standard deviation implementation.
-		/// </summary>
-		/// <param name="values"></param>
-		/// <returns></returns>
 		public static double StandardDeviation(IEnumerable<double> values)
 		{
 			double mean = values.Sum() / values.Count();
-			double average = values.Average(); // for debugging
+			//double average = values.Average(); // for debugging
 
 			double[] squares = values.Select(x => x*x).ToArray();
 			double squaresSum = squares.Sum();

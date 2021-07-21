@@ -1,4 +1,5 @@
-﻿using System;
+﻿using csharp_console.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -9,50 +10,59 @@ namespace csharp_console.Mutations
 {
 	public static class RouteMutation
 	{
-		private static readonly Random rand = new Random();
 		public async static Task Swap(WarehousesChromosome whc)
 		{
-			Warehouse wh = whc.warehouses[rand.Next(whc.warehouses.Length)];
-			double oldFitness = wh.Fitness;
-			List<PointD> route = wh.CarRoutes[ rand.Next(wh.CarsAmount) ];
+			Warehouse wh = whc.warehouses[RandomService.Next(whc.warehouses.Length)];
+			List<PointD> route = wh.CarRoutes[ RandomService.Next(wh.CarsAmount) ];
 			int length = route.Count;
+
+			// this mutation has no sense if the route has less than 2 points
 			if (length < 2)
 				return;
+			
+			double oldTimeFitness = wh.TimeFitness;
+			double oldDistanceFitness = wh.DistanceFitness;
 
-			int index1 = rand.Next(length);
-			var other = new List<int>(length-1);
-			for (int i = 0; i < length; i++)
+			int index1 = RandomService.Next(length);
+			int[] availableIndices = new int[length-1];
 			{
-				if (i != index1)
+				int temp = 0;
+				for (int i = 0; i < length; i++)
 				{
-					other.Add(i);
+					if (i == index1){
+						temp = 1;
+						continue;
+					}
+					
+					availableIndices[i - temp] = i;
 				}
 			}
-			int index2 = other[ rand.Next(length-1) ];
+			int index2 = availableIndices[ RandomService.Next(availableIndices.Length) ];
 
-			PointD temp = route[index1];
-			route[index1] = route[index2];
-			route[index2] = temp;
+			{
+				PointD temp = route[index1];
+				route[index1] = route[index2];
+				route[index2] = temp;
+			}
 
-			double newFitness = await wh.ComputeDistanceAndSave();
-			//whc.UpdateFitness();
-			if (newFitness <= oldFitness)
+			double newTimeFitness = await wh.ComputeDistanceAndSave(Mode.Time);
+			double newDistanceFitness = await wh.ComputeDistanceAndSave(Mode.Distance);
+			if ( WarehousesChromosome.Mode == Mode.Time && newTimeFitness <= oldTimeFitness ||
+				WarehousesChromosome.Mode == Mode.Distance && newDistanceFitness <= oldDistanceFitness )
 			{
 				whc.UpdateFitness();
-				//whc. Fitness = whc.Fitness.Value - oldFitness + newFitness;
-				return;
 			}
 			else
 			{
 				// swap back and set old fitness
-				temp = route[index1];
-				route[index1] = route[index2];
-				route[index2] = temp;
-				wh.Fitness = oldFitness;
+				{
+					var temp = route[index1];
+					route[index1] = route[index2];
+					route[index2] = temp;
+				}
+				wh.ReturnFitness(oldTimeFitness, Mode.Time);
+				wh.ReturnFitness(oldDistanceFitness, Mode.Distance);
 			}
-
-
-			//await whc.ComputeFitness();
 		}
 	}
 }

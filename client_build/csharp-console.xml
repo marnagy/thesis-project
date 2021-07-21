@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>csharp-console</name>
+    </assembly>
+    <members>
+        <member name="T:csharp_console.RandomExtensions">
+            <summary>
+            Some extension methods for <see cref="T:System.Random"/> for creating a few more kinds of random stuff.
+            </summary>
+        </member>
+        <member name="M:csharp_console.RandomExtensions.NextGaussian(System.Random,System.Double,System.Double)">
+            <summary>
+              Generates normally distributed numbers. Each operation makes two Gaussians for the price of one, and apparently they can be cached or something for better performance, but who cares.
+            </summary>
+            <param name="r"></param>
+            <param name = "mu">Mean of the distribution</param>
+            <param name = "sigma">Standard deviation</param>
+            <returns></returns>
+        </member>
+        <member name="T:csharp_console.Services.DBService">
+            <summary>
+            Singleton class for more performance on client and to reduce the amount of requests to server.
+            </summary>
+        </member>
+        <member name="T:csharp_console.Services.RandomService">
+            <summary>
+            Thread-safe implementation of Random service
+            </summary>
+        </member>
+    </members>
+</doc>

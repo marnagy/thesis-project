@@ -12,23 +12,22 @@ namespace csharp_console.Services
 	/// </summary>
 	public static class DBService
 	{
-		//static readonly SQLiteConnection db;
-		static readonly ConcurrentDictionary<(PointD, PointD), double> db;
+		static readonly ConcurrentDictionary<(PointD, PointD), double> timeDB;
+		static readonly ConcurrentDictionary<(PointD, PointD), double> distanceDB;
 		static DBService()
 		{
-			db = new ConcurrentDictionary<(PointD, PointD), double>();
+			timeDB = new ConcurrentDictionary<(PointD, PointD), double>();
+			distanceDB = new ConcurrentDictionary<(PointD, PointD), double>();
 		}
-		//private static SQLiteConnection CreateConnection()
-		//{
-
-		//}
-		public static bool TryGetFitness(PointD p1, PointD p2, out double res)
+		public static bool TryGetFitness(PointD p1, PointD p2, Mode mode, out double res)
 		{
-			return db.TryGetValue((p1, p2), out res);
+			return mode == Mode.Time ? timeDB.TryGetValue((p1, p2), out res)
+				: distanceDB.TryGetValue((p1, p2), out res );
 		}
-		public static void AddValue(PointD p1, PointD p2, double value)
+		public static bool TryAddValue(PointD p1, PointD p2, Mode mode, double value)
 		{
-			db.TryAdd((p1, p2), value);
+			return mode == Mode.Time ? timeDB.TryAdd((p1, p2), value)
+				: distanceDB.TryAdd((p1, p2), value);
 		}
 	}
 }

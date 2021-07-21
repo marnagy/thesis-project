@@ -2,43 +2,36 @@
 /__pycache__
 /.vscode
 
-# files
-/*.txt
-/*.log
-/*.png
-/*.gif
-/knapsack.py
-/*.csv
-
-# rest api
-/rest/cache
-/rest/*.osm
-/rest/__pycache__
-
 /python/cache
 /python/*.osm
 /python/__pycache__
-
-# Rust
-/tsp/target
-/tsp
+/python/ors_key.txt
 
 # C#
 /csharp-console/.vs
 /csharp-console/csharp-console/bin
 /csharp-console/csharp-console/obj
+/csharp-console/csharp-console/Properties
+# ignore XML docs generated on running with the Release configuration
+/csharp-console/csharp-console/csharp-console.xml
 
 # C# results
 /client_results
 
 # test files
-/ox_test
 /test_[0-9]*
+/test_jihocesky*
+/test_prague*
+/test_test*
 
+/[0-9]*/result_visualization
 
-# ignore python docs helper files
-/python/docs/_build
-/python/docs/_static
-/python/docs/_templates
-/python/docs/cache
-/python/docs
+# map file
+/python/*map*
+/python/*.json
+
+/end_*_points_*/result_visualization
+
+/*.txt
+/*.pdf
+/*.png
