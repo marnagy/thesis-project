@@ -18,6 +18,7 @@ namespace csharp_console
 		public double Fitness { get => WarehousesChromosome.Mode == Mode.Time ? TimeFitness : DistanceFitness; }
 		public double TimeFitness { get; set; }
 		public double DistanceFitness { get; set; }
+		private readonly FitnessWithProxy fitnessProxyInstance;
 		public Warehouse(double lat, double lon, int cars)
 		{
 			Point = new PointD(lat, lon);
@@ -27,6 +28,7 @@ namespace csharp_console
 			{
 				CarRoutes[i] = new List<PointD>();
 			}
+			this.fitnessProxyInstance = FitnessWithProxy.GetInstance();
 		}
 		public static Warehouse Random(PointD lower_left, PointD higher_right, int cars)
 		{
@@ -83,7 +85,7 @@ namespace csharp_console
 					Evaluation.RouteDistance(this,
 						routeIndex: i,
 						fitness: (p1, p2) => Warehouse.UseCache ?
-							FitnessFunc(p1, p2, mode) : 
+							this.fitnessProxyInstance.FitnessFunc(p1, p2, mode) :
 							Task.FromResult( FitnessFuncNoCache(p1, p2, mode) )
 					)
 				);
@@ -92,19 +94,19 @@ namespace csharp_console
 			double result = mode == Mode.Time ? values.Max() : values.Sum();
 			return result;
 		}
-		private async Task<double> FitnessFunc(PointD p1, PointD p2, Mode mode)
-		{
-			if ( DBService.TryGetFitness(p1, p2, mode, out double value) )
-			{
-				return value;
-			}
-			else
-			{
-				var val = Evaluation.MapDistance(p1, p2, mode);
-				DBService.TryAddValue(p1, p2, mode, val);
-				return val;
-			}
-		}
+		// private async Task<double> FitnessFunc(PointD p1, PointD p2, Mode mode)
+		// {
+			// if ( DBService.TryGetFitness(p1, p2, mode, out double value) )
+			// {
+			// 	return value;
+			// }
+			// else
+			// {
+			// 	var val = Evaluation.MapDistance(p1, p2, mode);
+			// 	DBService.TryAddValue(p1, p2, mode, val);
+			// 	return val;
+			// }
+		// }
 		private double FitnessFuncNoCache(PointD p1, PointD p2, Mode mode)
 		{
 			var val = Evaluation.MapDistance(p1, p2, mode);
