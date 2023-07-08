@@ -9,6 +9,7 @@
 
 # C#
 /csharp-console/.vs
+/csharp-console/testing
 /csharp-console/csharp-console/bin
 /csharp-console/csharp-console/obj
 /csharp-console/csharp-console/Properties

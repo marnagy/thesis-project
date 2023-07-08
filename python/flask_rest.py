@@ -60,7 +60,7 @@ def get_node(point):
         :return: node ID
         :rtype: integer
     '''
-    node = ox.get_nearest_node(graph, point=(point.lat, point.lon))
+    node = ox.nearest_nodes(graph, point.lat, point.lon)
     return node
 
 def get_route(point1, point2, weight: str):
