@@ -14,10 +14,17 @@ namespace csharp_console
 	public class FitnessWithProxy
 	{
 		private static FitnessWithProxy instance = null;
+		private static object _lock = new object();
 		public static FitnessWithProxy GetInstance()
 		{
 			if (instance is null)
-				instance = new FitnessWithProxy();
+			{
+				lock (_lock)
+				{
+					if (instance is null)
+						instance = new FitnessWithProxy();
+				}
+			}
 			
 			return instance;
 		}
